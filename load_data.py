@@ -153,9 +153,7 @@ def load_json_data():
                 before_mu=rc['before_mu'],
                 before_sigma=rc['before_sigma'],
                 after_mu=rc['after_mu'],
-                after_sigma=rc['after_sigma'],
-                conservative_rating=rc.get('conservative_rating', 0.0),
-                conservative_rating_before=rc.get('conservative_rating_before', 0.0)
+                after_sigma=rc['after_sigma']
             )
             session.add(rating_change)
         session.commit()
