@@ -142,6 +142,25 @@ def load_json_data():
         session.commit()
         print(f"Loaded {len(standings_data)} season standings")
         
+        print("Loading rating changes...")
+        with open('data/rating_changes.json', 'r') as f:
+            rating_changes_data = json.load(f)
+        for rc in rating_changes_data:
+            rating_change = RatingChange(
+                id=rc['id'],
+                player_id=rc['player_id'],
+                tournament_id=rc['tournament_id'],
+                before_mu=rc['before_mu'],
+                before_sigma=rc['before_sigma'],
+                after_mu=rc['after_mu'],
+                after_sigma=rc['after_sigma'],
+                conservative_rating=rc.get('conservative_rating', 0.0),
+                conservative_rating_before=rc.get('conservative_rating_before', 0.0)
+            )
+            session.add(rating_change)
+        session.commit()
+        print(f"Loaded {len(rating_changes_data)} rating changes")
+        
         print("✅ All data loaded successfully!")
         
     except Exception as e:
