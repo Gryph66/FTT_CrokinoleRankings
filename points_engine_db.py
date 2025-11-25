@@ -436,16 +436,8 @@ class PointsEngineDB:
         else:
             avg_top_mu = sum(top_mus) / len(top_mus)
             
-            # Normalization approach (same as singles)
-            min_mu = 0.0
-            max_mu = 7.0
-            target_min = 0.9
-            target_max = 1.5
-            
-            if max_mu > min_mu:
-                fsi_raw = target_min + (avg_top_mu - min_mu) * (target_max - target_min) / (max_mu - min_mu)
-            else:
-                fsi_raw = target_min
+            # Simple scaling: FSI = avg_top_mu / scaling_factor
+            fsi_raw = avg_top_mu / self.fsi_scaling_factor
             
             fsi = max(self.fsi_min, min(fsi_raw, self.fsi_max))
 
