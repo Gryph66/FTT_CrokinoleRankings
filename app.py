@@ -555,7 +555,9 @@ def main():
                 "🌟 Season Standings",
                 "📊 Event Points",
                 "🎯 Player Top 5",
-                "📈 FSI Trends"
+                "📈 FSI Trends",
+                "---",
+                "⚙️ System Parameters"
             ],
             label_visibility="collapsed")
         
@@ -590,6 +592,9 @@ def main():
     elif page == "📈 FSI Trends":
         from views import fsi_trends
         fsi_trends.render()
+    elif page == "⚙️ System Parameters":
+        from views import system_parameters
+        system_parameters.render()
     elif page == "---":
         st.info("Please select a page from the sidebar.")
 
