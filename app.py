@@ -2152,7 +2152,7 @@ def show_tier_comparison():
         """)
 
 
-        """)
+
 
 def show_tournament_sequencing():
     st.header("📅 Tournament Sequencing")
