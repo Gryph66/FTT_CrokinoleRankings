@@ -545,11 +545,6 @@ def main():
     with st.sidebar:
         st.header("Navigation")
         
-        # Add Refresh Button
-        if st.button("🔄 Refresh Data", help="Clear cache and reload latest data from database"):
-            invalidate_data_cache()
-            st.rerun()
-            
         page = st.radio(
             "Go to",
             [
