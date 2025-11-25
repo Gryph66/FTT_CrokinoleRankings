@@ -14,12 +14,23 @@ def render():
         st.error("Points engine not initialized. Please load data first.")
         return
     
-    if 'ranking_engine' not in st.session_state or not st.session_state.ranking_engine:
-        st.error("Ranking engine not initialized. Please load data first.")
-        return
-    
     points_engine = st.session_state.points_engine
-    ranking_engine = st.session_state.ranking_engine
+    
+    # Try to get ranking_engine (admin site) or use points_engine params (public site)
+    if 'ranking_engine' in st.session_state and st.session_state.ranking_engine:
+        ranking_engine = st.session_state.ranking_engine
+        mu = ranking_engine.mu
+        sigma = ranking_engine.sigma
+        beta = ranking_engine.beta
+        gamma = ranking_engine.gamma
+        draw_probability = ranking_engine.draw_probability
+    else:
+        # Public site - get from points_engine which loads them from database
+        mu = points_engine.mu
+        sigma = points_engine.sigma
+        beta = points_engine.beta
+        gamma = points_engine.gamma
+        draw_probability = points_engine.draw_probability
     
     st.divider()
     
@@ -30,11 +41,11 @@ def render():
     rating_params = {
         "Parameter": ["Initial μ (Mu)", "Initial σ (Sigma)", "β (Beta)", "γ (Gamma)", "Draw Probability"],
         "Value": [
-            f"{ranking_engine.mu:.3f}",
-            f"{ranking_engine.sigma:.3f}",
-            f"{ranking_engine.beta:.3f}",
-            f"{ranking_engine.gamma:.3f}",
-            f"{ranking_engine.draw_probability:.3f}"
+            f"{mu:.3f}",
+            f"{sigma:.3f}",
+            f"{beta:.3f}",
+            f"{gamma:.3f}",
+            f"{draw_probability:.3f}"
         ],
         "Description": [
             "Starting skill rating for new players (mean)",
