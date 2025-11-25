@@ -1048,20 +1048,7 @@ def show_tournament_analysis():
     
     st.divider()
     
-    st.subheader("Tournament Strength by Tier")
-    tier_comparison = tournament_df.groupby('tier').agg({
-        'avg_rating_after': 'mean',
-        'num_players': 'mean',
-        'tournament': 'count'
-    }).reset_index()
-    tier_comparison.columns = ['tier', 'avg_strength', 'avg_field_size', 'count']
-    
-    fig = px.bar(tier_comparison, x='tier', y='avg_strength', 
-                 title='Average Field Strength by Current Tier System',
-                 labels={'avg_strength': 'Average Field Strength', 'tier': 'Tier'})
-    st.plotly_chart(fig, use_container_width=True)
-    
-    st.info("💡 This analysis shows how skill-based field strength compares to the geographic-based tier system. Tournaments far from Ontario may have high field strength despite lower tier classification.")
+    st.subheader("Field Strength Distribution")
 
 def show_admin_section():
     st.header("Admin & Calculation Logs")
