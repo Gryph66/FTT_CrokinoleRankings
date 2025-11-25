@@ -328,6 +328,16 @@ class TTTRankingEngine:
         
         for change in changes:
             tournament = self.db.get_tournament_details(change.tournament_id)
+            
+            # Calculate conservative ratings if not in database
+            cons_before = change.conservative_rating_before
+            if cons_before is None:
+                cons_before = change.before_mu - 3 * change.before_sigma
+            
+            cons_after = change.conservative_rating_after
+            if cons_after is None:
+                cons_after = change.after_mu - 3 * change.after_sigma
+            
             history.append({
                 'tournament_date': tournament.tournament_date if tournament else None,
                 'tournament': tournament.event_name if tournament else 'Unknown',
@@ -340,8 +350,8 @@ class TTTRankingEngine:
                 'before_sigma': change.before_sigma,
                 'sigma': change.after_sigma,
                 'after_sigma': change.after_sigma,
-                'conservative_rating_before': change.conservative_rating_before,
-                'conservative_rating': change.conservative_rating_after,
+                'conservative_rating_before': cons_before,
+                'conservative_rating': cons_after,
                 'mu_change': change.mu_change,
                 'sigma_change': change.sigma_change
             })

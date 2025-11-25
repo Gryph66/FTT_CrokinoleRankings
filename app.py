@@ -1030,8 +1030,8 @@ def show_tournament_analysis():
     st.subheader("Tournament Strength Metrics")
     
     display_tournament_df = tournament_df.copy()
-    display_tournament_df['avg_rating_before'] = display_tournament_df['avg_rating_before'].round(2)
-    display_tournament_df['avg_rating_after'] = display_tournament_df['avg_rating_after'].round(2)
+    display_tournament_df['avg_rating_before'] = pd.to_numeric(display_tournament_df['avg_rating_before'], errors='coerce').round(2)
+    display_tournament_df['avg_rating_after'] = pd.to_numeric(display_tournament_df['avg_rating_after'], errors='coerce').round(2)
     
     # Format date
     display_tournament_df['tournament_date'] = pd.to_datetime(display_tournament_df['tournament_date']).dt.strftime('%Y-%m-%d')
