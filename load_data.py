@@ -219,13 +219,12 @@ def load_json_data():
                     id=p['id'],
                     alpha=p['alpha'],
                     doubles_alpha=p['doubles_alpha'],
-                    singles_top_n_for_fsi=p.get('singles_top_n_for_fsi', 20),
+                    top_n_for_fsi=p.get('singles_top_n_for_fsi', 20),
                     doubles_top_n_for_fsi=p.get('doubles_top_n_for_fsi', 20),
                     fsi_scaling_factor=p.get('fsi_scaling_factor', 25.0),
                     fsi_min=p.get('fsi_min', 0.8),
                     fsi_max=p.get('fsi_max', 1.6),
-                    best_tournaments_per_season=p.get('best_tournaments_per_season', 5),
-                    participation_points=p.get('participation_points', 0.0)
+                    best_tournaments_per_season=p.get('best_tournaments_per_season', 5)
                 )
                 session.add(params)
                 session.commit()
