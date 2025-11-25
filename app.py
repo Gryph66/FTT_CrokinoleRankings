@@ -882,11 +882,11 @@ def show_player_rankings():
                     # Calculate Delta on Conservative Rating (Event Delta)
                     display_history['delta_cons'] = display_history['conservative_rating'] - display_history['conservative_rating_before']
                     
-                    # Round numeric columns
+                    # Convert to numeric and round (handle any string/None values)
                     cols_to_round = ['after_mu', 'after_sigma', 
                                     'conservative_rating_before', 'conservative_rating', 'delta_cons']
                     for col in cols_to_round:
-                        display_history[col] = display_history[col].round(2)
+                        display_history[col] = pd.to_numeric(display_history[col], errors='coerce').round(2)
                     
                     # Rename columns with clear labels
                     display_history = display_history.rename(columns={
