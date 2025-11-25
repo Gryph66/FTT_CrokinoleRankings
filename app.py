@@ -564,24 +564,14 @@ def main():
             [
                 "📊 Player Rankings",
                 "🏆 Tournament Analysis", 
-                           "🎲 Tier Prediction", 
-                           "📈 Tier Comparison",
-                           "---",
-                           "🌟 Season Standings",
-                           "📊 Event Points",
-                           "🎯 Player Top 5",
-                           "📈 FSI Trends",
-                           "---",
-                           "📊 Data Crokinole",
-                           "🎯 DataCrokinole FTT",
-                           "📄 Technical Guide",
-                           "---",
-                           "🔧 Admin & Logs", 
-                           "📤 Data Management", 
-                           "⚙️ Parameter Tuning", 
-                           "📅 Tournament Sequencing"
-                       ],
-                       label_visibility="collapsed")
+                "🎲 Tier Prediction", 
+                "---",
+                "🌟 Season Standings",
+                "📊 Event Points",
+                "🎯 Player Top 5",
+                "📈 FSI Trends"
+            ],
+            label_visibility="collapsed")
         
         st.divider()
         
@@ -601,8 +591,6 @@ def main():
         show_tournament_analysis()
     elif page == "🎲 Tier Prediction":
         show_tier_prediction()
-    elif page == "📈 Tier Comparison":
-        show_tier_comparison()
     elif page == "🌟 Season Standings":
         from views import season_standings
         season_standings.render()
@@ -615,22 +603,6 @@ def main():
     elif page == "📈 FSI Trends":
         from views import fsi_trends
         fsi_trends.render()
-    elif page == "📊 Data Crokinole":
-        from views import data_crokinole
-        data_crokinole.render()
-    elif page == "🎯 DataCrokinole FTT":
-        from views import data_crokinole_ftt
-        data_crokinole_ftt.render()
-    elif page == "📄 Technical Guide":
-        show_technical_guide()
-    elif page == "🔧 Admin & Logs":
-        show_admin_section()
-    elif page == "📤 Data Management":
-        show_data_management()
-    elif page == "⚙️ Parameter Tuning":
-        show_parameter_tuning()
-    elif page == "📅 Tournament Sequencing":
-        show_tournament_sequencing()
     elif page == "---":
         st.info("Please select a page from the sidebar.")
 

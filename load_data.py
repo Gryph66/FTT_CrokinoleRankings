@@ -145,7 +145,16 @@ def load_json_data():
         print("Loading rating changes...")
         with open('data/rating_changes.json', 'r') as f:
             rating_changes_data = json.load(f)
+        
+        # Deduplicate by ID (keep first occurrence)
+        seen_ids = set()
+        unique_rating_changes = []
         for rc in rating_changes_data:
+            if rc['id'] not in seen_ids:
+                seen_ids.add(rc['id'])
+                unique_rating_changes.append(rc)
+        
+        for rc in unique_rating_changes:
             rating_change = RatingChange(
                 id=rc['id'],
                 player_id=rc['player_id'],
@@ -157,7 +166,7 @@ def load_json_data():
             )
             session.add(rating_change)
         session.commit()
-        print(f"Loaded {len(rating_changes_data)} rating changes")
+        print(f"Loaded {len(unique_rating_changes)} rating changes (deduplicated from {len(rating_changes_data)})")
         
         print("✅ All data loaded successfully!")
         
