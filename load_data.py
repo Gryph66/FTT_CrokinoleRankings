@@ -166,7 +166,72 @@ def load_json_data():
             )
             session.add(rating_change)
         session.commit()
-        print(f"Loaded {len(unique_rating_changes)} rating changes (deduplicated from {len(rating_changes_data)})")
+        print(f"Loaded {len(rating_changes_data)} rating changes")
+        
+        print("Loading tournament results...")
+        with open('data/tournament_results.json', 'r') as f:
+            results_data = json.load(f)
+        for r in results_data:
+            result = TournamentResult(
+                id=r['id'],
+                tournament_id=r['tournament_id'],
+                player_id=r['player_id'],
+                place=r['place'],
+                before_mu=r.get('before_mu'),
+                before_sigma=r.get('before_sigma'),
+                team_key=r.get('team_key')
+            )
+            session.add(result)
+        session.commit()
+        print(f"Loaded {len(results_data)} tournament results")
+
+        print("Loading system parameters...")
+        try:
+            with open('data/system_parameters.json', 'r') as f:
+                sys_params = json.load(f)
+            if sys_params:
+                # Clear existing
+                session.query(SystemParameters).delete()
+                p = sys_params[0] # Should be only one row
+                params = SystemParameters(
+                    id=p['id'],
+                    mu=p['mu'],
+                    sigma=p['sigma'],
+                    beta=p['beta'],
+                    tau=p['tau'],
+                    draw_probability=p['draw_probability']
+                )
+                session.add(params)
+                session.commit()
+                print("Loaded system parameters")
+        except FileNotFoundError:
+            print("⚠️ system_parameters.json not found, skipping")
+
+        print("Loading points parameters...")
+        try:
+            with open('data/points_parameters.json', 'r') as f:
+                points_params = json.load(f)
+            if points_params:
+                # Clear existing
+                session.query(PointsParameters).delete()
+                p = points_params[0] # Should be only one row
+                params = PointsParameters(
+                    id=p['id'],
+                    alpha=p['alpha'],
+                    doubles_alpha=p['doubles_alpha'],
+                    singles_top_n_for_fsi=p.get('singles_top_n_for_fsi', 20),
+                    doubles_top_n_for_fsi=p.get('doubles_top_n_for_fsi', 20),
+                    fsi_scaling_factor=p.get('fsi_scaling_factor', 25.0),
+                    fsi_min=p.get('fsi_min', 0.8),
+                    fsi_max=p.get('fsi_max', 1.6),
+                    best_tournaments_per_season=p.get('best_tournaments_per_season', 5),
+                    participation_points=p.get('participation_points', 0.0)
+                )
+                session.add(params)
+                session.commit()
+                print("Loaded points parameters")
+        except FileNotFoundError:
+            print("⚠️ points_parameters.json not found, skipping")
         
         print("✅ All data loaded successfully!")
         
