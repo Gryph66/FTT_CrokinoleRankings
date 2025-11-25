@@ -224,12 +224,20 @@ def load_json_data():
                     id=p['id'],
                     alpha=p['alpha'],
                     doubles_alpha=p['doubles_alpha'],
+                    bonus_scale=p.get('bonus_scale', 0.0),
                     top_n_for_fsi=p.get('singles_top_n_for_fsi', 20),
                     doubles_top_n_for_fsi=p.get('doubles_top_n_for_fsi', 20),
                     fsi_scaling_factor=p.get('fsi_scaling_factor', 25.0),
                     fsi_min=p.get('fsi_min', 0.8),
                     fsi_max=p.get('fsi_max', 1.6),
-                    best_tournaments_per_season=p.get('best_tournaments_per_season', 5)
+                    best_tournaments_per_season=p.get('best_tournaments_per_season', 5),
+                    # Tiered base points
+                    top_tier_fsi_threshold=p.get('top_tier_fsi_threshold', 1.35),
+                    top_tier_base_points=p.get('top_tier_base_points', 60.0),
+                    normal_tier_base_points=p.get('normal_tier_base_points', 50.0),
+                    low_tier_base_points=p.get('low_tier_base_points', 40.0),
+                    low_tier_fsi_threshold=p.get('low_tier_fsi_threshold', 1.0),
+                    is_active=1
                 )
                 session.add(params)
                 session.commit()
