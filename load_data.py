@@ -159,10 +159,15 @@ def load_json_data():
                 id=rc['id'],
                 player_id=rc['player_id'],
                 tournament_id=rc['tournament_id'],
+                place=rc.get('place'),
                 before_mu=rc['before_mu'],
                 before_sigma=rc['before_sigma'],
                 after_mu=rc['after_mu'],
-                after_sigma=rc['after_sigma']
+                after_sigma=rc['after_sigma'],
+                mu_change=rc.get('mu_change'),
+                sigma_change=rc.get('sigma_change'),
+                conservative_rating_before=rc.get('conservative_rating_before'),
+                conservative_rating_after=rc.get('conservative_rating_after')
             )
             session.add(rating_change)
         session.commit()
