@@ -143,17 +143,19 @@ def render():
     with col1:
         st.markdown("**Singles Points**")
         singles_points_params = {
-            "Parameter": ["Alpha (α)", "Base Points", "Max Bonus", "Events Counted"],
+            "Parameter": ["Alpha (α)", "Top Tier Base", "Normal Tier Base", "Low Tier Base", "Best Events Counted"],
             "Value": [
                 f"{points_engine.alpha:.2f}",
-                f"{points_engine.base_points:.0f}",
-                f"{points_engine.max_bonus_points:.0f}",
-                f"{points_engine.events_counted}"
+                f"{getattr(points_engine, 'top_tier_base_points', 150):.0f}",
+                f"{getattr(points_engine, 'normal_tier_base_points', 100):.0f}",
+                f"{getattr(points_engine, 'low_tier_base_points', 50):.0f}",
+                f"{getattr(points_engine, 'best_tournaments_per_season', 6)}"
             ],
             "Description": [
                 "Overperformance bonus multiplier (points per rank gained)",
-                "Base points awarded for participation",
-                "Maximum bonus points for overperformance",
+                f"Base points for top tier tournaments (FSI ≥ {getattr(points_engine, 'top_tier_fsi_threshold', 1.2):.1f})",
+                f"Base points for normal tier tournaments",
+                f"Base points for low tier tournaments (FSI ≤ {getattr(points_engine, 'low_tier_fsi_threshold', 0.8):.1f})",
                 "Number of best events counted per season"
             ]
         }
@@ -161,23 +163,25 @@ def render():
             pd.DataFrame(singles_points_params),
             use_container_width=True,
             hide_index=True,
-            height=180
+            height=210
         )
     
     with col2:
         st.markdown("**Doubles Points**")
         doubles_points_params = {
-            "Parameter": ["Alpha (α)", "Base Points", "Max Bonus", "Events Counted"],
+            "Parameter": ["Alpha (α)", "Top Tier Base", "Normal Tier Base", "Low Tier Base", "Best Events Counted"],
             "Value": [
                 f"{points_engine.doubles_alpha:.2f}",
-                f"{points_engine.base_points:.0f}",
-                f"{points_engine.max_bonus_points:.0f}",
-                f"{points_engine.events_counted}"
+                f"{getattr(points_engine, 'top_tier_base_points', 150):.0f}",
+                f"{getattr(points_engine, 'normal_tier_base_points', 100):.0f}",
+                f"{getattr(points_engine, 'low_tier_base_points', 50):.0f}",
+                f"{getattr(points_engine, 'best_tournaments_per_season', 6)}"
             ],
             "Description": [
                 "Overperformance bonus multiplier (points per rank gained)",
-                "Base points awarded for participation (shared)",
-                "Maximum bonus points for overperformance (shared)",
+                f"Base points for top tier tournaments (FSI ≥ {getattr(points_engine, 'top_tier_fsi_threshold', 1.2):.1f}) (shared)",
+                f"Base points for normal tier tournaments (shared)",
+                f"Base points for low tier tournaments (FSI ≤ {getattr(points_engine, 'low_tier_fsi_threshold', 0.8):.1f}) (shared)",
                 "Number of best events counted per season (shared)"
             ]
         }
@@ -185,7 +189,7 @@ def render():
             pd.DataFrame(doubles_points_params),
             use_container_width=True,
             hide_index=True,
-            height=180
+            height=210
         )
     
     st.divider()
