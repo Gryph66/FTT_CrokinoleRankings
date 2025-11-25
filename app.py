@@ -66,7 +66,7 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None):
             FROM players p
             JOIN tournament_results tr ON p.id = tr.player_id
             JOIN tournaments t ON tr.tournament_id = t.id
-            WHERE t.tournament_group = %(group)s
+            WHERE t.tournament_group = :group
               AND t.tournament_format = 'singles'
             ORDER BY conservative_rating DESC
         """
@@ -120,29 +120,20 @@ def get_cached_tournaments(_cache_key):
 
 @st.cache_data
 def get_cached_season_standings(_cache_key, season=None, tournament_group=None):
-    """
-    Cache season standings using SQL CTE to recompute best-5 totals per tournament group.
-    
-    Args:
-        _cache_key: Cache invalidation key
-        season: Optional season filter
-        tournament_group: Optional tournament group filter ('NCA', 'UK', 'Other', or None for all)
-    """
-    # Build WHERE conditions
-    where_conditions = []
+    """Cache season standings with optional filters using parameterized queries."""
     params = {}
+    where_clauses = []
     
     if season:
-        where_conditions.append("t.season = %(season)s")
+        where_clauses.append("t.season = :season")
         params['season'] = season
     
     if tournament_group:
-        where_conditions.append("t.tournament_group = %(tournament_group)s")
+        where_clauses.append("t.tournament_group = :tournament_group")
         params['tournament_group'] = tournament_group
     
-    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
     
-    # SQL CTE to recompute best-5 totals with tournament_group filtering
     sql = f"""
         WITH ranked_events AS (
             SELECT 
@@ -156,7 +147,7 @@ def get_cached_season_standings(_cache_key, season=None, tournament_group=None):
             FROM season_event_points sep
             JOIN tournaments t ON sep.tournament_id = t.id
             JOIN players p ON sep.player_id = p.id
-            {where_clause}
+            {where_sql}
         ),
         player_totals AS (
             SELECT 
@@ -196,7 +187,7 @@ def get_cached_event_points(_cache_key, tournament_id=None, season=None):
             FROM season_event_points sep
             JOIN tournaments t ON sep.tournament_id = t.id
             JOIN players p ON sep.player_id = p.id
-            WHERE sep.tournament_id = %(tournament_id)s
+            WHERE sep.tournament_id = :tournament_id
             ORDER BY sep.total_points DESC
         """
         df = pd.read_sql(sql, db_engine, params={'tournament_id': tournament_id})
@@ -209,7 +200,7 @@ def get_cached_event_points(_cache_key, tournament_id=None, season=None):
             FROM season_event_points sep
             JOIN tournaments t ON sep.tournament_id = t.id
             JOIN players p ON sep.player_id = p.id
-            WHERE sep.season = %(season)s
+            WHERE sep.season = :season
             ORDER BY sep.total_points DESC
         """
         df = pd.read_sql(sql, db_engine, params={'season': season})
@@ -236,7 +227,7 @@ def get_cached_tournament_fsi(_cache_key, season=None):
                    tf.fsi, tf.avg_top_mu
             FROM tournament_fsi tf
             JOIN tournaments t ON tf.tournament_id = t.id
-            WHERE t.season = %(season)s
+            WHERE t.season = :season
             ORDER BY t.tournament_date ASC NULLS LAST,
                      t.sequence_order ASC NULLS LAST,
                      t.created_at ASC
@@ -290,7 +281,7 @@ def get_cached_player_tournament_events(_cache_key, player_name, season=None):
             FROM season_event_points sep
             JOIN tournaments t ON sep.tournament_id = t.id
             JOIN players p ON sep.player_id = p.id
-            WHERE p.name = %(player_name)s AND t.season = %(season)s
+            WHERE p.name = :player_name AND t.season = :season
             ORDER BY sep.total_points DESC
         """
         df = pd.read_sql(sql, db_engine, params={'player_name': player_name, 'season': season})
@@ -303,7 +294,7 @@ def get_cached_player_tournament_events(_cache_key, player_name, season=None):
             FROM season_event_points sep
             JOIN tournaments t ON sep.tournament_id = t.id
             JOIN players p ON sep.player_id = p.id
-            WHERE p.name = %(player_name)s
+            WHERE p.name = :player_name
             ORDER BY sep.total_points DESC
         """
         df = pd.read_sql(sql, db_engine, params={'player_name': player_name})
@@ -316,7 +307,7 @@ def get_cached_tournaments_list(_cache_key, season=None):
         sql = """
             SELECT id, event_name, season, tournament_date, num_players, tournament_format
             FROM tournaments
-            WHERE season = %(season)s
+            WHERE season = :season
             ORDER BY tournament_date DESC NULLS LAST, sequence_order ASC NULLS LAST
         """
         df = pd.read_sql(sql, db_engine, params={'season': season})
@@ -337,7 +328,7 @@ def get_cached_tournaments_with_fsi(_cache_key, tournament_group=None):
             SELECT t.id, t.season, t.event_name, t.tournament_date, t.tournament_format, t.tournament_group, tf.fsi
             FROM tournaments t
             JOIN tournament_fsi tf ON t.id = tf.tournament_id
-            WHERE t.tournament_group = %(tournament_group)s
+            WHERE t.tournament_group = :tournament_group
             ORDER BY t.tournament_date DESC NULLS LAST, t.created_at DESC
         """
         return pd.read_sql(sql, db_engine, params={'tournament_group': tournament_group})
@@ -357,7 +348,7 @@ def get_cached_team_info(_cache_key, tournament_id):
         SELECT tr.player_id, tr.team_key, p.name as player_name
         FROM tournament_results tr
         JOIN players p ON tr.player_id = p.id
-        WHERE tr.tournament_id = %(tournament_id)s
+        WHERE tr.tournament_id = :tournament_id
         ORDER BY tr.place, p.name
     """
     return pd.read_sql(sql, db_engine, params={'tournament_id': int(tournament_id)})
@@ -381,7 +372,7 @@ def get_cached_points_by_place(_cache_key, tournament_group=None):
             FROM season_event_points sep
             JOIN tournaments t ON sep.tournament_id = t.id
             JOIN tournament_fsi tf ON sep.tournament_id = tf.tournament_id
-            WHERE t.tournament_group = %(tournament_group)s
+            WHERE t.tournament_group = :tournament_group
             ORDER BY t.tournament_date DESC, t.id, sep.place
         """
         return pd.read_sql(sql, db_engine, params={'tournament_group': tournament_group})
