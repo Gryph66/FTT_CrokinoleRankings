@@ -14,7 +14,12 @@ def render():
         st.error("Points engine not initialized. Please load data first.")
         return
     
-    engine = st.session_state.points_engine
+    if 'ranking_engine' not in st.session_state or not st.session_state.ranking_engine:
+        st.error("Ranking engine not initialized. Please load data first.")
+        return
+    
+    points_engine = st.session_state.points_engine
+    ranking_engine = st.session_state.ranking_engine
     
     st.divider()
     
@@ -25,11 +30,11 @@ def render():
     rating_params = {
         "Parameter": ["Initial μ (Mu)", "Initial σ (Sigma)", "β (Beta)", "γ (Gamma)", "Draw Probability"],
         "Value": [
-            f"{engine.mu:.3f}",
-            f"{engine.sigma:.3f}",
-            f"{engine.beta:.3f}",
-            f"{engine.gamma:.3f}",
-            f"{engine.draw_probability:.3f}"
+            f"{ranking_engine.mu:.3f}",
+            f"{ranking_engine.sigma:.3f}",
+            f"{ranking_engine.beta:.3f}",
+            f"{ranking_engine.gamma:.3f}",
+            f"{ranking_engine.draw_probability:.3f}"
         ],
         "Description": [
             "Starting skill rating for new players (mean)",
@@ -64,10 +69,10 @@ def render():
         singles_fsi_params = {
             "Parameter": ["Top N Players", "Scaling Factor", "Min FSI", "Max FSI"],
             "Value": [
-                f"{engine.top_n_for_fsi}",
-                f"{engine.fsi_scaling_factor:.1f}",
-                f"{engine.fsi_min:.1f}",
-                f"{engine.fsi_max:.1f}"
+                f"{points_engine.top_n_for_fsi}",
+                f"{points_engine.fsi_scaling_factor:.1f}",
+                f"{points_engine.fsi_min:.1f}",
+                f"{points_engine.fsi_max:.1f}"
             ],
             "Description": [
                 "Number of top players used to calculate FSI",
@@ -88,10 +93,10 @@ def render():
         doubles_fsi_params = {
             "Parameter": ["Top N Teams", "Scaling Factor", "Min FSI", "Max FSI"],
             "Value": [
-                f"{engine.doubles_top_n_for_fsi}",
-                f"{engine.fsi_scaling_factor:.1f}",
-                f"{engine.fsi_min:.1f}",
-                f"{engine.fsi_max:.1f}"
+                f"{points_engine.doubles_top_n_for_fsi}",
+                f"{points_engine.fsi_scaling_factor:.1f}",
+                f"{points_engine.fsi_min:.1f}",
+                f"{points_engine.fsi_max:.1f}"
             ],
             "Description": [
                 "Number of top teams used to calculate FSI",
@@ -120,10 +125,10 @@ def render():
         singles_points_params = {
             "Parameter": ["Alpha (α)", "Base Points", "Max Bonus", "Events Counted"],
             "Value": [
-                f"{engine.alpha:.2f}",
-                f"{engine.base_points:.0f}",
-                f"{engine.max_bonus_points:.0f}",
-                f"{engine.events_counted}"
+                f"{points_engine.alpha:.2f}",
+                f"{points_engine.base_points:.0f}",
+                f"{points_engine.max_bonus_points:.0f}",
+                f"{points_engine.events_counted}"
             ],
             "Description": [
                 "Overperformance bonus multiplier (points per rank gained)",
@@ -144,10 +149,10 @@ def render():
         doubles_points_params = {
             "Parameter": ["Alpha (α)", "Base Points", "Max Bonus", "Events Counted"],
             "Value": [
-                f"{engine.doubles_alpha:.2f}",
-                f"{engine.base_points:.0f}",
-                f"{engine.max_bonus_points:.0f}",
-                f"{engine.events_counted}"
+                f"{points_engine.doubles_alpha:.2f}",
+                f"{points_engine.base_points:.0f}",
+                f"{points_engine.max_bonus_points:.0f}",
+                f"{points_engine.events_counted}"
             ],
             "Description": [
                 "Overperformance bonus multiplier (points per rank gained)",
