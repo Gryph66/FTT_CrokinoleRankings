@@ -29,7 +29,7 @@ def render():
         sigma = engine.sigma
         beta = engine.beta
         gamma = engine.gamma
-        draw_probability = engine.draw_probability
+        draw_probability = getattr(engine, 'draw_probability', 0.0)  # Default to 0.0 for crokinole
     else:
         st.error("Rating engine not initialized. Please load data first.")
         return
