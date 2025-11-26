@@ -570,6 +570,17 @@ def main():
             st.success("✅ Database Connected")
             st.metric("Total Players", stats['player_count'])
             st.metric("Tournaments Processed", stats['tournament_count'])
+            
+            # Show last updated time (based on file modification or current time if just deployed)
+            import os
+            from datetime import datetime
+            try:
+                # Use database file modification time as proxy for deployment time
+                mtime = os.path.getmtime('public_data.db')
+                last_updated = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M')
+                st.caption(f"Last Updated: {last_updated}")
+            except:
+                pass
         else:
             st.info("ℹ️ Database Ready - Load Data")
     
