@@ -766,7 +766,7 @@ def show_player_rankings():
     
     st.dataframe(
         display_df,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config={
             "rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -882,7 +882,7 @@ def show_player_rankings():
                         margin=dict(t=80)  # Add margin for title/legend
                     )
                     
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                     
                     st.caption("""
                     **Understanding the Chart:**
@@ -936,7 +936,7 @@ def show_player_rankings():
                     
                     st.dataframe(
                         display_history, 
-                        use_container_width=True, 
+                        width="stretch", 
                         hide_index=True,
                         column_config={
                             "Date": st.column_config.TextColumn("Date", width="small"),
@@ -1072,7 +1072,7 @@ def show_tournament_analysis():
             'tournament', 'season', 'tournament_date', 'tournament_group', 'tournament_format',
             'num_players', 'avg_rating_before', 'avg_top_mu', 'fsi'
         ]],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         height=1000, # Taller canvas (approx 30+ rows)
         column_config={
@@ -1101,7 +1101,7 @@ def show_tournament_analysis():
     fig = px.bar(tier_comparison, x='tier', y='avg_strength', 
                  title='Average Field Strength by Current Tier System',
                  labels={'avg_strength': 'Average Field Strength', 'tier': 'Tier'})
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     
     st.info("💡 This analysis shows how skill-based field strength compares to the geographic-based tier system. Tournaments far from Ontario may have high field strength despite lower tier classification.")
 
@@ -1183,7 +1183,7 @@ def show_admin_section():
         if not changes_df.empty:
             changes_df = changes_df.sort_values('Place')
             
-            st.dataframe(changes_df, use_container_width=True, hide_index=True)
+            st.dataframe(changes_df, width="stretch", hide_index=True)
             
             st.divider()
             
@@ -1193,7 +1193,7 @@ def show_admin_section():
                              title="Rating Change vs Place",
                              labels={'Δμ': 'Rating Change (mu)', 'Place': 'Tournament Place'})
             fig.add_hline(y=0, line_dash="dash", line_color="gray")
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
         else:
             st.info("No rating changes recorded for this tournament (likely Doubles or unprocessed).")
         
@@ -1257,7 +1257,7 @@ def show_data_management():
                     if empty_seasons.any():
                         empty_count = empty_seasons.sum()
                         st.error(f"❌ Found {empty_count} row(s) with empty season values. Please ensure all rows have a valid season.")
-                        st.dataframe(df[empty_seasons][['season', 'event', 'player', 'place']].head(20), use_container_width=True)
+                        st.dataframe(df[empty_seasons][['season', 'event', 'player', 'place']].head(20), width="stretch")
                     else:
                         # Normalize season column to ensure consistent format (16.0 → "16")
                         from db_service import normalize_season
@@ -1275,7 +1275,7 @@ def show_data_management():
                         if optional_found:
                             st.info(f"📋 Optional fields found: {', '.join(optional_found)}")
                         
-                        st.dataframe(df.head(10), use_container_width=True)
+                        st.dataframe(df.head(10), width="stretch")
                         
                         st.warning("⚠️ **Stay on this page during upload!** Navigating away will interrupt the process.")
                         
@@ -1413,7 +1413,7 @@ def show_data_management():
                 st.session_state.confirm_recalc_data_mgmt = False
             
             if not st.session_state.confirm_recalc_data_mgmt:
-                if st.button("🔄 Recalculate All Rankings", type="primary", use_container_width=True, key="recalc_main"):
+                if st.button("🔄 Recalculate All Rankings", type="primary", width="stretch", key="recalc_main"):
                     st.session_state.confirm_recalc_data_mgmt = True
                     st.rerun()
             else:
@@ -2135,7 +2135,7 @@ def show_tier_comparison():
         'Avg Rating': '{:.2f}'
     })
     
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.dataframe(styled_df, width="stretch", hide_index=True)
     
     st.divider()
     
@@ -2157,7 +2157,7 @@ def show_tier_comparison():
                 'Underrated': '#66ff66'
             }
         )
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.plotly_chart(fig_pie, width="stretch")
     
     with col2:
         st.markdown("**Field Strength vs Geographic Tier**")
@@ -2175,7 +2175,7 @@ def show_tier_comparison():
                 'Underrated': '#66ff66'
             }
         )
-        st.plotly_chart(fig_scatter, use_container_width=True)
+        st.plotly_chart(fig_scatter, width="stretch")
     
     st.divider()
     
@@ -2346,7 +2346,7 @@ def show_tier_prediction():
                 f"{percentile_75:.2f}"
             ]
         })
-        st.dataframe(metrics_df, use_container_width=True, hide_index=True)
+        st.dataframe(metrics_df, width="stretch", hide_index=True)
     
     with col2:
         st.markdown("**Rating Distribution**")
@@ -2357,7 +2357,7 @@ def show_tier_prediction():
             title='Conservative Rating Distribution',
             labels={'conservative': 'Conservative Rating (μ - 3σ)'}
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     
     st.divider()
     
@@ -2375,7 +2375,7 @@ def show_tier_prediction():
             'σ (Uncertainty)': '{:.2f}',
             'Conservative Rating': '{:.2f}'
         }),
-        use_container_width=True,
+        width="stretch",
         hide_index=True
     )
     
@@ -2434,7 +2434,7 @@ def show_tournament_sequencing():
         })
     
     df = pd.DataFrame(tournament_data)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
     
     st.divider()
     

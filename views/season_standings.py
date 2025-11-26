@@ -88,7 +88,7 @@ def render():
     
     styled_df = display_df.style.apply(highlight_top3, axis=1)
     
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.dataframe(styled_df, width="stretch", hide_index=True)
     
     # Summary stats
     col1, col2, col3 = st.columns(3)

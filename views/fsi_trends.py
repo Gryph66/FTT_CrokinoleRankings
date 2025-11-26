@@ -151,7 +151,7 @@ def render():
             fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
             fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='lightgray')
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width="stretch")
             
             # Summary stats
             st.caption(f"**Showing {len(filtered_points['tournament_id'].unique())} tournament(s)** | " +
@@ -229,7 +229,7 @@ def render():
                   annotation_text="Baseline (FSI = 1.0)")
     
     fig.update_layout(height=500, hovermode='x unified')
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     
     # Tournament table
     st.divider()
@@ -267,7 +267,7 @@ def render():
     
     styled_df = display_df.style.apply(highlight_fsi, axis=1)
     
-    st.dataframe(styled_df, use_container_width=True, hide_index=True)
+    st.dataframe(styled_df, width="stretch", hide_index=True)
     
     # FSI explanation
     st.divider()
@@ -321,7 +321,7 @@ def render():
             if not top_players_df.empty:
                 top_players_df = top_players_df[['name', 'mu', 'sigma']]
                 top_players_df.columns = ['Player', 'Entering Rating (μ)', 'Uncertainty (σ)']
-                st.dataframe(top_players_df, use_container_width=True, hide_index=True)
+                st.dataframe(top_players_df, width="stretch", hide_index=True)
             
             # Display Calculation
             st.markdown("### 2. Calculation Steps")

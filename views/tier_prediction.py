@@ -118,7 +118,7 @@ def render():
             'Name': [participants[i] for i in breakdown['top_indices']],
             'Rating (μ)': breakdown['top_ratings']
         })
-        st.dataframe(top_df, use_container_width=True, hide_index=True)
+        st.dataframe(top_df, width="stretch", hide_index=True)
     
     st.divider()
     
@@ -323,4 +323,4 @@ def _display_pools(pools: List[List[Tuple[str, float]]], is_doubles: bool):
                 'Name': [name for name, _ in pool],
                 'Rating': [f"{rating:.2f}" for _, rating in pool]
             })
-            st.dataframe(pool_df, use_container_width=True, hide_index=True, height=min(400, len(pool) * 35 + 38))
+            st.dataframe(pool_df, width="stretch", hide_index=True, height=min(400, len(pool) * 35 + 38))

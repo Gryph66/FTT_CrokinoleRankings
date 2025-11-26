@@ -67,7 +67,7 @@ def render():
     
     st.dataframe(
         pd.DataFrame(rating_params),
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config={
             "Parameter": st.column_config.TextColumn("Parameter", width="medium"),
@@ -103,7 +103,7 @@ def render():
         }
         st.dataframe(
             pd.DataFrame(singles_fsi_params),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=180
         )
@@ -127,7 +127,7 @@ def render():
         }
         st.dataframe(
             pd.DataFrame(doubles_fsi_params),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=180
         )
@@ -163,7 +163,7 @@ def render():
         }
         st.dataframe(
             pd.DataFrame(singles_points_params),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=240
         )
@@ -191,7 +191,7 @@ def render():
         }
         st.dataframe(
             pd.DataFrame(doubles_points_params),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             height=240
         )

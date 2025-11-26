@@ -767,7 +767,7 @@ def show_player_rankings():
     
     st.dataframe(
         display_df,
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         column_config={
             "rank": st.column_config.NumberColumn("Rank", format="%d"),
@@ -883,7 +883,7 @@ def show_player_rankings():
                         margin=dict(t=80)  # Add margin for title/legend
                     )
                     
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig, width="stretch")
                     
                     st.caption("""
                     **Understanding the Chart:**
@@ -937,7 +937,7 @@ def show_player_rankings():
                     
                     st.dataframe(
                         display_history, 
-                        use_container_width=True, 
+                        width="stretch", 
                         hide_index=True,
                         column_config={
                             "Date": st.column_config.TextColumn("Date", width="small"),
@@ -1074,7 +1074,7 @@ def show_tournament_analysis():
             'tournament', 'season', 'tournament_date', 'tournament_group', 'tournament_format',
             'num_players', 'avg_rating_before', 'avg_top_mu', 'fsi'
         ]],
-        use_container_width=True,
+        width="stretch",
         hide_index=True,
         height=1000, # Taller canvas (approx 30+ rows)
         column_config={
