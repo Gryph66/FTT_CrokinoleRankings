@@ -1045,7 +1045,7 @@ def show_tournament_analysis():
     st.dataframe(
         display_tournament_df[[
             'tournament', 'season', 'tournament_date', 'tournament_group', 'tournament_format',
-            'num_players', 'avg_rating_before', 'avg_top_mu', 'fsi'
+            'num_players', 'avg_rating_before', 'avg_top_mu', 'fsi_raw', 'fsi'
         ]],
         width="stretch",
         hide_index=True,
@@ -1059,6 +1059,7 @@ def show_tournament_analysis():
             "num_players": st.column_config.NumberColumn("Field Size", format="%d"),
             "avg_rating_before": st.column_config.NumberColumn("Avg Rating (all)", format="%.2f"),
             "avg_top_mu": st.column_config.NumberColumn("Avg Rating (Top 20)", format="%.2f"),
+            "fsi_raw": st.column_config.NumberColumn("FSI Raw", format="%.3f"),
             "fsi": st.column_config.NumberColumn("FSI Final", format="%.3f")
         }
     )
