@@ -310,21 +310,21 @@ class PointsEngineDB:
     def calculate_points(self, place: int, field_size: int, fsi: float, 
                         expected_rank: int, alpha: float = None) -> Tuple[float, float, float, float]:
         """
-        Calculate points for a player's tournament result using tiered base points.
+        Calculate points for a player's tournament result using the new curve-based formula.
+        Formula: Points = (50 * FSI) ^ (1 - (Place - 1) / (FieldSize - 1))
         
         Args:
             place: Player's finishing position (1 = winner)
             field_size: Total number of players/teams
             fsi: Field Strength Index for this tournament (already clamped)
-            expected_rank: Player's expected finish based on pre-event rating
-            alpha: Exponential decay factor (defaults to self.alpha, use self.doubles_alpha for doubles)
+            expected_rank: Player's expected finish (unused in new formula but kept for signature)
+            alpha: Exponential decay factor (unused in new formula but kept for signature)
         
         Returns:
             Tuple of (raw_points, base_points, bonus_points, total_points)
+            Note: raw_points, base_points, and total_points are identical in this new system.
+                  bonus_points is always 0.
         """
-        if alpha is None:
-            alpha = self.alpha
-        
         # Validate inputs
         if place < 1:
             place = 1
@@ -332,37 +332,24 @@ class PointsEngineDB:
             place = field_size
         if field_size < 1:
             field_size = 1
+            
+        # New Formula Implementation
+        first_points = 50.0 * fsi
         
-        # Select base points tier based on FSI
-        if fsi >= self.top_tier_fsi_threshold:
-            base_max_points = self.top_tier_base_points
-        elif fsi < self.low_tier_fsi_threshold:
-            base_max_points = self.low_tier_base_points
-        else:
-            base_max_points = self.normal_tier_base_points
-        
-        # Calculate raw points from placement using tier-specific base
         if field_size == 1:
-            raw_points = float(base_max_points)
+            points = round(first_points)
         else:
-            # Normalized rank: 0 for winner, 1 for last place
-            # Clamp to [0, 1] to prevent negative numbers that cause complex results
-            rnorm = max(0.0, min(1.0, (place - 1) / (field_size - 1)))
-            # Top-heavy curve with exponential decay
-            # Ensure base is non-negative before raising to power
-            base_value = max(0.0, 1.0 - rnorm)
-            raw_points = float(base_max_points * (base_value ** alpha))
-        
-        # Scale by field strength
-        base_points = float(raw_points * fsi)
-        
-        # Overperformance bonus (PVE = Place vs Expected)
-        pve = expected_rank - place  # Positive = did better than expected
-        bonus_points = float(fsi * self.bonus_scale * pve)
-        
-        total_points = float(base_points + bonus_points)
-        
-        return raw_points, base_points, bonus_points, total_points
+            exponent = (place - 1) / (field_size - 1)
+            # Ensure base is positive before raising to power
+            if first_points <= 0:
+                points = 0.0
+            else:
+                points = first_points ** (1.0 - exponent)
+            
+            # Floor safeguard
+            points = max(1.0, round(points))
+            
+        return float(points), float(points), 0.0, float(points)
     
     def _process_doubles_tournament(self, session, tournament, all_players):
         """
