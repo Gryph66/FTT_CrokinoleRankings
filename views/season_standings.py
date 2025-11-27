@@ -72,7 +72,8 @@ def render():
         'player': 'Player',
         'total_points': 'Total Points',
         'events_counted': 'Events',
-        'final_display_rating': 'TrueSkill Rating'
+        'final_display_rating': 'TrueSkill Rating',
+        'pseudo_elo': 'Pseudo-ELO'
     })
     
     # Color-code top 3

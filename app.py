@@ -182,6 +182,8 @@ def get_cached_season_standings(_cache_key, season=None, tournament_group=None):
                 season,
                 SUM(total_points) as total_points,
                 COUNT(*) as events_counted,
+                MAX(current_rating_mu) as current_rating_mu,
+                MAX(current_rating_sigma) as current_rating_sigma,
                 MAX(current_rating_mu - 3 * current_rating_sigma) as final_display_rating
             FROM ranked_events
             WHERE event_rank <= 5
@@ -193,12 +195,47 @@ def get_cached_season_standings(_cache_key, season=None, tournament_group=None):
             player,
             total_points,
             events_counted,
-            final_display_rating
+            final_display_rating,
+            current_rating_mu,
+            current_rating_sigma
         FROM player_totals
         ORDER BY season DESC, rank ASC
     """
     
     df = pd.read_sql(sql, db_engine, params=params)
+    
+    if len(df) > 0:
+        # Calculate Z-Score and Pseudo-ELO
+        import numpy as np
+        
+        # Get Z-Score baseline parameters
+        sql_params = "SELECT z_score_baseline_mean, z_score_baseline_std FROM system_parameters WHERE is_active = 1 LIMIT 1"
+        try:
+            params_df = pd.read_sql(sql_params, db_engine)
+            if not params_df.empty:
+                baseline_mean = params_df.iloc[0]['z_score_baseline_mean']
+                baseline_std = params_df.iloc[0]['z_score_baseline_std']
+            else:
+                baseline_mean = 0.0
+                baseline_std = 1.0
+        except:
+            baseline_mean = 0.0
+            baseline_std = 1.0
+        
+        # Avoid division by zero
+        if baseline_std == 0:
+            baseline_std = 1.0
+        
+        # Calculate conservative rating, Z-Score, and Pseudo-ELO
+        df['conservative_rating'] = df['current_rating_mu'] - 3 * df['current_rating_sigma']
+        df['z_score'] = (df['conservative_rating'] - baseline_mean) / baseline_std
+        elo_values = 1900 + 220 * df['z_score']
+        elo_values = np.maximum(elo_values, 1500)
+        df['pseudo_elo'] = np.rint(elo_values).astype(int)
+        
+        # Drop intermediate columns
+        df = df.drop(columns=['current_rating_mu', 'current_rating_sigma', 'conservative_rating', 'z_score'])
+    
     return df if len(df) > 0 else pd.DataFrame()
 
 @st.cache_data

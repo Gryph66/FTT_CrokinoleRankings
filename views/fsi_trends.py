@@ -237,7 +237,7 @@ def render():
     
     # Format table
     display_df = filtered_df.copy()
-    display_df['fsi'] = display_df['fsi'].round(3)
+    display_df['fsi'] = display_df['fsi'].round(2)
     display_df['avg_top_mu'] = display_df['avg_top_mu'].round(2)
     display_df['tournament_date'] = display_df['tournament_date'].dt.strftime('%Y-%m-%d')
     
