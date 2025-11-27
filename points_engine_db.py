@@ -337,7 +337,7 @@ class PointsEngineDB:
         first_points = 50.0 * fsi
         
         if field_size == 1:
-            points = round(first_points)
+            points = round(first_points, 1)  # Round to 1 decimal place
         else:
             exponent = (place - 1) / (field_size - 1)
             # Ensure base is positive before raising to power
@@ -346,8 +346,8 @@ class PointsEngineDB:
             else:
                 points = first_points ** (1.0 - exponent)
             
-            # Floor safeguard
-            points = max(1.0, round(points))
+            # Floor safeguard - round to 1 decimal place
+            points = max(1.0, round(points, 1))
             
         return float(points), float(points), 0.0, float(points)
     
