@@ -95,6 +95,12 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None):
         
     all_rankings_df['z_score'] = (all_rankings_df['conservative_rating'] - baseline_mean) / baseline_std
     
+    # Calculate Pseudo-ELO from Z-Score
+    import numpy as np
+    elo_values = 1900 + 220 * all_rankings_df['z_score']
+    elo_values = np.maximum(elo_values, 1500)  # Apply 1500 floor
+    all_rankings_df['pseudo_elo'] = np.rint(elo_values).astype(int)  # Round to integer
+    
     # Add global rank column (before filtering)
     all_rankings_df.insert(0, 'rank', range(1, len(all_rankings_df) + 1))
     
@@ -774,6 +780,7 @@ def show_player_rankings():
             "uncertainty": st.column_config.NumberColumn("Uncertainty (σ)", format="%.2f"),
             "conservative_rating": st.column_config.NumberColumn("Conservative Rating", format="%.2f", help="μ - 3σ"),
             "z_score": st.column_config.NumberColumn("Z-Score", format="%.2f", help="Standardized rating based on static baseline"),
+            "pseudo_elo": st.column_config.NumberColumn("Pseudo-ELO", format="%d", help="ELO-style rating (1900 + 220*Z, min 1500)"),
             "tournaments_played": st.column_config.NumberColumn("Tournaments", format="%d")
         }
     )
