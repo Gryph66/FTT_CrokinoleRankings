@@ -684,7 +684,13 @@ def show_player_rankings():
     """)
     
     st.caption("TrueSkill ratings are calculated from all singles tournaments. The filter below shows only players who participated in the selected group's tournaments.")
-    selected_group = st.selectbox("Tournament Group Filter", tournament_groups, index=0, key="player_rankings_group")
+    
+    # Filters row - Tournament Group and Search on same row
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        selected_group = st.selectbox("Tournament Group Filter", tournament_groups, index=0, key="player_rankings_group")
+    with col2:
+        search_player = st.text_input("🔍 Search Player", "")
     
     # Pass tournament group to rankings query (None if "All" is selected)
     filter_group = None if selected_group == 'All' else selected_group
@@ -696,6 +702,9 @@ def show_player_rankings():
         st.info("Please load tournament data in the Data Management section to see rankings.")
         return
     
+    st.divider()
+    
+    # Stats banner
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Players", len(rankings_df))
@@ -719,21 +728,12 @@ def show_player_rankings():
     
     st.divider()
     
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        # Default to showing top 20 players
-        max_players = st.number_input("Max Players to Display", min_value=1, max_value=len(rankings_df), value=min(20, len(rankings_df)), step=10)
-    
-    with col2:
-        search_player = st.text_input("🔍 Search Player", "")
-    
-    # Apply search filter first
+    # Apply search filter
     if search_player:
         filtered_df = rankings_df[rankings_df['player'].str.contains(search_player, case=False, na=False)]
     else:
-        # Limit to max_players if no search
-        filtered_df = rankings_df.head(max_players)
+        # Show all players (table will be scrollable)
+        filtered_df = rankings_df
     
     st.subheader(f"Rankings ({len(filtered_df)} players shown)")
     
