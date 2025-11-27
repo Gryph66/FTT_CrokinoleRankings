@@ -54,47 +54,47 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None):
                          If provided, only shows players who participated in that group's singles tournaments
                          Ratings remain unchanged (calculated from all singles tournaments)
     """
+    # Always get all players first to establish global ranks
+    sql_all = """
+        SELECT 
+            name as player,
+            current_rating_mu as rating,
+            current_rating_sigma as uncertainty,
+            (current_rating_mu - 3 * current_rating_sigma) as conservative_rating,
+            tournaments_played
+        FROM players
+        ORDER BY conservative_rating DESC
+    """
+    all_rankings_df = pd.read_sql(sql_all, db_engine)
+    
+    if len(all_rankings_df) == 0:
+        return pd.DataFrame()
+    
+    # Round numerical columns
+    all_rankings_df['rating'] = all_rankings_df['rating'].round(2)
+    all_rankings_df['uncertainty'] = all_rankings_df['uncertainty'].round(2)
+    all_rankings_df['conservative_rating'] = all_rankings_df['conservative_rating'].round(2)
+    
+    # Add global rank column (before filtering)
+    all_rankings_df.insert(0, 'rank', range(1, len(all_rankings_df) + 1))
+    
+    # If tournament group filter is specified, filter the results but keep global ranks
     if tournament_group:
-        # Filter to only players who participated in singles tournaments from the selected group
-        sql = """
-            SELECT DISTINCT
-                p.name as player,
-                p.current_rating_mu as rating,
-                p.current_rating_sigma as uncertainty,
-                (p.current_rating_mu - 3 * p.current_rating_sigma) as conservative_rating,
-                p.tournaments_played
+        # Get list of players who participated in this group's singles tournaments
+        sql_filter = """
+            SELECT DISTINCT p.name
             FROM players p
             JOIN tournament_results tr ON p.id = tr.player_id
             JOIN tournaments t ON tr.tournament_id = t.id
             WHERE t.tournament_group = :group
               AND t.tournament_format = 'singles'
-            ORDER BY conservative_rating DESC
         """
-        rankings_df = pd.read_sql(sql, db_engine, params={'group': tournament_group})
+        filtered_players = pd.read_sql(sql_filter, db_engine, params={'group': tournament_group})
+        
+        # Filter all_rankings_df to only include these players (preserving global ranks)
+        rankings_df = all_rankings_df[all_rankings_df['player'].isin(filtered_players['name'])]
     else:
-        # Show all players
-        sql = """
-            SELECT 
-                name as player,
-                current_rating_mu as rating,
-                current_rating_sigma as uncertainty,
-                (current_rating_mu - 3 * current_rating_sigma) as conservative_rating,
-                tournaments_played
-            FROM players
-            ORDER BY conservative_rating DESC
-        """
-        rankings_df = pd.read_sql(sql, db_engine)
-    
-    if len(rankings_df) == 0:
-        return pd.DataFrame()
-    
-    # Round numerical columns
-    rankings_df['rating'] = rankings_df['rating'].round(2)
-    rankings_df['uncertainty'] = rankings_df['uncertainty'].round(2)
-    rankings_df['conservative_rating'] = rankings_df['conservative_rating'].round(2)
-    
-    # Add rank column
-    rankings_df.insert(0, 'rank', range(1, len(rankings_df) + 1))
+        rankings_df = all_rankings_df
     
     return rankings_df
 
@@ -722,17 +722,20 @@ def show_player_rankings():
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        min_tournaments = st.slider("Minimum Tournaments Played", 0, 10, 0)
+        # Default to showing top 20 players
+        max_players = st.number_input("Max Players to Display", min_value=1, max_value=len(rankings_df), value=min(20, len(rankings_df)), step=10)
     
     with col2:
         search_player = st.text_input("🔍 Search Player", "")
     
-    filtered_df = rankings_df[rankings_df['tournaments_played'] >= min_tournaments]
-    
+    # Apply search filter first
     if search_player:
-        filtered_df = filtered_df[filtered_df['player'].str.contains(search_player, case=False, na=False)]
+        filtered_df = rankings_df[rankings_df['player'].str.contains(search_player, case=False, na=False)]
+    else:
+        # Limit to max_players if no search
+        filtered_df = rankings_df.head(max_players)
     
-    st.subheader(f"Rankings ({len(filtered_df)} players)")
+    st.subheader(f"Rankings ({len(filtered_df)} players shown)")
     
     display_df = filtered_df.copy()
     display_df['rating'] = display_df['rating'].round(2)
