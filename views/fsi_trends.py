@@ -268,19 +268,6 @@ def render():
     styled_df = display_df.style.apply(highlight_fsi, axis=1)
     
     st.dataframe(styled_df, width="stretch", hide_index=True)
-    
-    # FSI explanation
-    st.divider()
-    st.divider()
-    st.markdown("""
-    **FSI Interpretation:**
-    - **FSI > 1.3** (green): Very strong field, high-level competition
-    - **FSI 0.9-1.3**: Normal field strength
-    - **FSI < 0.9** (red): Weaker field, fewer top players
-    
-    **Calculation:** FSI = (Average of top 20 pre-event μ ratings) / 25.0  
-    **Range:** Clamped between 0.8 and 1.6
-    """)
 
     # ========== FSI BREAKDOWN SECTION ==========
     st.divider()
