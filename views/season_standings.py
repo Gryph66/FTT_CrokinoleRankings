@@ -89,7 +89,16 @@ def render():
     
     styled_df = display_df.style.apply(highlight_top3, axis=1)
     
-    st.dataframe(styled_df, width="stretch", hide_index=True)
+    st.dataframe(
+        styled_df, 
+        width="stretch", 
+        hide_index=True,
+        column_config={
+            "Total Points": st.column_config.NumberColumn("Total Points", format="%.2f"),
+            "TrueSkill Rating": st.column_config.NumberColumn("TrueSkill Rating", format="%.2f"),
+            "Pseudo-ELO": st.column_config.NumberColumn("Pseudo-ELO", format="%d")
+        }
+    )
     
     # Summary stats
     col1, col2, col3 = st.columns(3)

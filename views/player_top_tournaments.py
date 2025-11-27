@@ -103,7 +103,16 @@ def render():
     
     styled_df = display_df.style.apply(highlight_top5, axis=1)
     
-    st.dataframe(styled_df, width="stretch", hide_index=True)
+    st.dataframe(
+        styled_df, 
+        width="stretch", 
+        hide_index=True,
+        column_config={
+            "FSI": st.column_config.NumberColumn("FSI", format="%.2f"),
+            "PVE": st.column_config.NumberColumn("PVE", format="%.2f"),
+            "Points": st.column_config.NumberColumn("Points", format="%.2f")
+        }
+    )
     
     # Show best 5 callout
     st.divider()

@@ -163,7 +163,19 @@ def render():
     
     styled_df = display_df.style.apply(highlight_performance, axis=1)
     
-    st.dataframe(styled_df, width="stretch", hide_index=True)
+    st.dataframe(
+        styled_df, 
+        width="stretch", 
+        hide_index=True,
+        column_config={
+            "FSI": st.column_config.NumberColumn("FSI", format="%.2f"),
+            "Raw Points": st.column_config.NumberColumn("Raw Points", format="%.2f"),
+            "Base Points": st.column_config.NumberColumn("Base Points", format="%.2f"),
+            "PVE": st.column_config.NumberColumn("PVE", format="%.2f"),
+            "Bonus": st.column_config.NumberColumn("Bonus", format="%.2f"),
+            "Total Points": st.column_config.NumberColumn("Total Points", format="%.2f")
+        }
+    )
     
     # Explanation
     st.divider()
