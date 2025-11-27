@@ -204,7 +204,9 @@ def load_json_data():
                     sigma=p['sigma'],
                     beta=p['beta'],
                     tau=p['tau'],
-                    draw_probability=p['draw_probability']
+                    draw_probability=p['draw_probability'],
+                    z_score_baseline_mean=p.get('z_score_baseline_mean', 0.0),
+                    z_score_baseline_std=p.get('z_score_baseline_std', 1.0)
                 )
                 session.add(params)
                 session.commit()

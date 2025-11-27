@@ -75,6 +75,26 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None):
     all_rankings_df['uncertainty'] = all_rankings_df['uncertainty'].round(2)
     all_rankings_df['conservative_rating'] = all_rankings_df['conservative_rating'].round(2)
     
+    # Calculate Z-Score based on static baseline
+    sql_params = "SELECT z_score_baseline_mean, z_score_baseline_std FROM system_parameters WHERE is_active = 1 LIMIT 1"
+    try:
+        params_df = pd.read_sql(sql_params, db_engine)
+        if not params_df.empty:
+            baseline_mean = params_df.iloc[0]['z_score_baseline_mean']
+            baseline_std = params_df.iloc[0]['z_score_baseline_std']
+        else:
+            baseline_mean = 0.0
+            baseline_std = 1.0
+    except:
+        baseline_mean = 0.0
+        baseline_std = 1.0
+        
+    # Avoid division by zero
+    if baseline_std == 0:
+        baseline_std = 1.0
+        
+    all_rankings_df['z_score'] = (all_rankings_df['conservative_rating'] - baseline_mean) / baseline_std
+    
     # Add global rank column (before filtering)
     all_rankings_df.insert(0, 'rank', range(1, len(all_rankings_df) + 1))
     
@@ -753,6 +773,7 @@ def show_player_rankings():
             "rating": st.column_config.NumberColumn("Rating (μ)", format="%.2f"),
             "uncertainty": st.column_config.NumberColumn("Uncertainty (σ)", format="%.2f"),
             "conservative_rating": st.column_config.NumberColumn("Conservative Rating", format="%.2f", help="μ - 3σ"),
+            "z_score": st.column_config.NumberColumn("Z-Score", format="%.2f", help="Standardized rating based on static baseline"),
             "tournaments_played": st.column_config.NumberColumn("Tournaments", format="%d")
         }
     )

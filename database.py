@@ -115,6 +115,10 @@ class SystemParameters(Base):
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
     description = Column(Text, nullable=True)
+    
+    # Z-Score Baseline Parameters (Static Snapshot)
+    z_score_baseline_mean = Column(Float, default=0.0)
+    z_score_baseline_std = Column(Float, default=1.0)
 
 class PointsParameters(Base):
     __tablename__ = 'points_parameters'
