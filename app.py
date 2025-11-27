@@ -746,7 +746,7 @@ def show_player_rankings():
         display_df,
         width="stretch",
         hide_index=True,
-        height=min(len(display_df) * 35 + 38, 800),  # Dynamic height based on rows, capped at 800px
+        height=738,  # Fixed height for ~20 rows (20 * 35 + 38 header)
         column_config={
             "rank": st.column_config.NumberColumn("Rank", format="%d"),
             "player": st.column_config.TextColumn("Player Name"),
