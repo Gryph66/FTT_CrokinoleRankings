@@ -218,16 +218,20 @@ def render():
     
     with st.expander("**Points Calculation**", expanded=False):
         st.markdown("""
+        **New Curve-Based Formula:**
         ```
-        1. Base Points: base_points × fsi
-        2. Overperformance Bonus: min(alpha × (expected_rank - actual_place), max_bonus_points) × fsi
-        3. Total Points: base_points + bonus_points
+        Points = (50 × FSI) ^ (1 - (Place - 1) / (FieldSize - 1))
         ```
         
-        **Example (Singles, FSI=1.2, Expected Rank=10, Actual Place=5):**
-        - Base: 100 × 1.2 = 120 points
-        - Bonus: min(10 × (10-5), 200) × 1.2 = min(50, 200) × 1.2 = 60 points
-        - Total: 120 + 60 = **180 points**
+        **Key Properties:**
+        - **Winner (Place 1)**: Always gets `50 × FSI` points.
+        - **Last Place**: Always gets `1` point (floor).
+        - **Curve**: Points decay exponentially based on field size.
+        
+        **Example (FSI=1.2, Field Size=32):**
+        - **Winner (1st)**: (50 × 1.2)¹ = **60 points**
+        - **Middle (16th)**: (50 × 1.2)^(1 - 15/31) ≈ 60^0.516 ≈ **8.3 points**
+        - **Last (32nd)**: (50 × 1.2)⁰ = **1 point**
         """)
     
     with st.expander("**Conservative Rating**", expanded=False):
@@ -245,6 +249,77 @@ def render():
         - μ = 25.0, σ = 2.5
         - Conservative Rating = 25.0 - (3 × 2.5) = **17.5**
         """)
+    
+    st.divider()
+    
+    # === FSI VS POINTS MATRIX ===
+    st.subheader("📊 FSI vs Points Matrix")
+    st.markdown("*Points awarded for different placements across a range of Field Strength Indices (FSI).*")
+    st.caption("Calculated using a hypothetical field size of 100 players.")
+    
+    # Generate Matrix
+    fsi_values = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+    placements = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 70, 90, 100]
+    placement_labels = {
+        1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 
+        6: "6th", 7: "7th", 8: "8th", 9: "9th", 10: "10th",
+        15: "15th", 20: "20th", 30: "30th", 40: "40th", 
+        50: "50th", 60: "60th", 70: "70th", 90: "90th", 100: "Last (100th)"
+    }
+    
+    matrix_data = []
+    field_size = 100
+    
+    for place in placements:
+        row = {"Place": placement_labels.get(place, f"{place}th")}
+        for fsi in fsi_values:
+            # Formula: (50 * FSI) ^ (1 - (Place - 1) / (FieldSize - 1))
+            first_points = 50.0 * fsi
+            if first_points <= 0:
+                points = 0.0
+            else:
+                exponent = (place - 1) / (field_size - 1)
+                points = first_points ** (1.0 - exponent)
+            
+            # Floor safeguard and rounding
+            points = max(1.0, round(points, 1))
+            
+            row[f"{fsi:.1f}"] = points
+        matrix_data.append(row)
+        
+    matrix_df = pd.DataFrame(matrix_data)
+    matrix_df = matrix_df.set_index("Place")
+    
+    # Style the dataframe
+    def color_scale(val):
+        # Simple heatmap coloring
+        # Max points approx 75 (1.5 * 50), Min 1
+        # Normalize 0-75
+        norm = min(1.0, max(0.0, val / 75.0))
+        # Green (high) to Red (low)
+        if norm > 0.5:
+            # Yellow to Green
+            r = int(255 * (1 - (norm - 0.5) * 2))
+            g = 255
+            b = 0
+        else:
+            # Red to Yellow
+            r = 255
+            g = int(255 * (norm * 2))
+            b = 0
+            
+        # Lighten the colors for background
+        alpha = 0.6
+        r = int(r + (255 - r) * (1 - alpha))
+        g = int(g + (255 - g) * (1 - alpha))
+        b = int(b + (255 - b) * (1 - alpha))
+            
+        return f'background-color: rgb({r}, {g}, {b})'
+
+    # Apply styling to all columns except index
+    styled_matrix = matrix_df.style.map(color_scale).format("{:.1f}")
+    
+    st.dataframe(styled_matrix, height=700)
     
     st.divider()
     
