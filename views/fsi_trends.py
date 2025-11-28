@@ -330,12 +330,12 @@ def render():
             **Parameters:**
             - $Avg\\mu = {details['avg_top_mu']:.4f}$ (average rating of top players)
             - $Scaling\\ Factor = {params['scaling_factor']:.2f}$ (tunable parameter)
-            - $FSI_{{{{min}}}} = {params['fsi_min']}$ (floor)
-            - $FSI_{{{{max}}}} = {params['fsi_max']}$ (ceiling)
+            - $FSI_{{min}} = {params['fsi_min']}$ (floor)
+            - $FSI_{{max}} = {params['fsi_max']}$ (ceiling)
             
             **Calculation:**
             $$
-            FSI_{{{{raw}}}} = \\frac{{{{{details['avg_top_mu']:.4f}}}}}}{{{{{params['scaling_factor']:.2f}}}}} = {details['fsi_raw']:.4f}
+            FSI_{{raw}} = \\frac{{{details['avg_top_mu']:.4f}}}{{{params['scaling_factor']:.2f}}} = {details['fsi_raw']:.4f}
             $$
             """)
             
