@@ -255,71 +255,75 @@ def render():
     # === FSI VS POINTS MATRIX ===
     st.subheader("📊 FSI vs Points Matrix")
     st.markdown("*Points awarded for different placements across a range of Field Strength Indices (FSI).*")
-    st.caption("Calculated using a hypothetical field size of 100 players.")
     
-    # Generate Matrix
-    fsi_values = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
-    placements = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 70, 90, 100]
-    placement_labels = {
-        1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 
-        6: "6th", 7: "7th", 8: "8th", 9: "9th", 10: "10th",
-        15: "15th", 20: "20th", 30: "30th", 40: "40th", 
-        50: "50th", 60: "60th", 70: "70th", 90: "90th", 100: "Last (100th)"
-    }
+    col1, col2 = st.columns(2)
     
-    matrix_data = []
-    field_size = 100
-    
-    for place in placements:
-        row = {"Place": placement_labels.get(place, f"{place}th")}
-        for fsi in fsi_values:
-            # Formula: (50 * FSI) ^ (1 - (Place - 1) / (FieldSize - 1))
-            first_points = 50.0 * fsi
-            if first_points <= 0:
-                points = 0.0
-            else:
-                exponent = (place - 1) / (field_size - 1)
-                points = first_points ** (1.0 - exponent)
-            
-            # Floor safeguard and rounding
-            points = max(1.0, round(points, 1))
-            
-            row[f"{fsi:.1f}"] = points
-        matrix_data.append(row)
+    # Helper to generate matrix
+    def generate_matrix_df(field_size, placements):
+        fsi_values = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+        placement_labels = {
+            1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 
+            6: "6th", 7: "7th", 8: "8th", 9: "9th", 10: "10th",
+            15: "15th", 20: "20th", 30: "30th", 40: "40th", 
+            50: "50th", 60: "60th", 70: "70th", 90: "90th", 100: "100th"
+        }
         
-    matrix_df = pd.DataFrame(matrix_data)
-    matrix_df = matrix_df.set_index("Place")
-    
-    # Style the dataframe
+        matrix_data = []
+        for place in placements:
+            if place > field_size:
+                continue
+                
+            label = placement_labels.get(place, f"{place}th")
+            if place == field_size:
+                label = f"Last ({place}th)"
+                
+            row = {"Place": label}
+            for fsi in fsi_values:
+                # Formula: (50 * FSI) ^ (1 - (Place - 1) / (FieldSize - 1))
+                first_points = 50.0 * fsi
+                if first_points <= 0:
+                    points = 0.0
+                else:
+                    exponent = (place - 1) / (field_size - 1)
+                    points = first_points ** (1.0 - exponent)
+                
+                # Floor safeguard and rounding
+                points = max(1.0, round(points, 1))
+                
+                row[f"{fsi:.1f}"] = points
+            matrix_data.append(row)
+            
+        df = pd.DataFrame(matrix_data)
+        return df.set_index("Place")
+
+    # Styling function
     def color_scale(val):
-        # Simple heatmap coloring
-        # Max points approx 75 (1.5 * 50), Min 1
-        # Normalize 0-75
         norm = min(1.0, max(0.0, val / 75.0))
-        # Green (high) to Red (low)
         if norm > 0.5:
-            # Yellow to Green
             r = int(255 * (1 - (norm - 0.5) * 2))
             g = 255
             b = 0
         else:
-            # Red to Yellow
             r = 255
             g = int(255 * (norm * 2))
             b = 0
-            
-        # Lighten the colors for background
         alpha = 0.6
         r = int(r + (255 - r) * (1 - alpha))
         g = int(g + (255 - g) * (1 - alpha))
         b = int(b + (255 - b) * (1 - alpha))
-            
         return f'background-color: rgb({r}, {g}, {b})'
 
-    # Apply styling to all columns except index
-    styled_matrix = matrix_df.style.map(color_scale).format("{:.1f}")
-    
-    st.dataframe(styled_matrix, height=700)
+    with col1:
+        st.markdown("**Singles** (Field Size: 100)")
+        singles_placements = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50, 60, 70, 90, 100]
+        singles_df = generate_matrix_df(100, singles_placements)
+        st.dataframe(singles_df.style.map(color_scale).format("{:.1f}"), height=700)
+
+    with col2:
+        st.markdown("**Doubles** (Field Size: 50)")
+        doubles_placements = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20, 30, 40, 50]
+        doubles_df = generate_matrix_df(50, doubles_placements)
+        st.dataframe(doubles_df.style.map(color_scale).format("{:.1f}"), height=700)
     
     st.divider()
     
