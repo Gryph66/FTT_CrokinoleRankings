@@ -260,7 +260,7 @@ def render():
     
     # Helper to generate matrix
     def generate_matrix_df(field_size, placements):
-        fsi_values = [0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
+        fsi_values = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5]
         placement_labels = {
             1: "1st", 2: "2nd", 3: "3rd", 4: "4th", 5: "5th", 
             6: "6th", 7: "7th", 8: "8th", 9: "9th", 10: "10th",
