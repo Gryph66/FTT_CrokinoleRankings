@@ -54,6 +54,7 @@ class PointsEngineDB:
                     # Doubles-specific parameters
                     self.doubles_top_n_for_fsi = params.doubles_top_n_for_fsi
                     self.doubles_alpha = params.doubles_alpha
+                    self.doubles_weight_high = getattr(params, 'doubles_weight_high', 0.65)
                     
                     # Validate tiered parameters
                     self._validate_parameters()
@@ -85,6 +86,7 @@ class PointsEngineDB:
         # Doubles-specific parameters
         self.doubles_top_n_for_fsi = 8
         self.doubles_alpha = 2.0
+        self.doubles_weight_high = 0.65
     
     def _validate_parameters(self):
         """Validate that parameters make sense."""
@@ -122,6 +124,7 @@ class PointsEngineDB:
                 # Doubles-specific
                 doubles_top_n_for_fsi=self.doubles_top_n_for_fsi,
                 doubles_alpha=self.doubles_alpha,
+                doubles_weight_high=self.doubles_weight_high,
                 
                 is_active=1,
                 description="Default FWP parameters with tiered base points and doubles support"
@@ -149,6 +152,7 @@ class PointsEngineDB:
                 self.low_tier_fsi_threshold = params.low_tier_fsi_threshold
                 self.doubles_top_n_for_fsi = params.doubles_top_n_for_fsi
                 self.doubles_alpha = params.doubles_alpha
+                self.doubles_weight_high = getattr(params, 'doubles_weight_high', 0.65)
     
     def calculate_fsi(self, pre_event_ratings: Dict[int, Tuple[float, float]]) -> Tuple[float, float]:
         """
@@ -259,7 +263,14 @@ class PointsEngineDB:
                     players = data['players']
                     if not players:
                         continue
-                    avg_mu = sum(p['mu'] for p in players) / len(players)
+                    # Weighted average for doubles teams
+                    mus = [p['mu'] for p in players]
+                    if len(mus) == 2:
+                        high_mu = max(mus)
+                        low_mu = min(mus)
+                        avg_mu = (high_mu * self.doubles_weight_high) + (low_mu * (1.0 - self.doubles_weight_high))
+                    else:
+                        avg_mu = sum(mus) / len(mus)
                     avg_sigma = sum(p['sigma'] for p in players) / len(players)
                     
                     team_name = " / ".join([p['name'] for p in players])

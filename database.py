@@ -143,6 +143,7 @@ class PointsParameters(Base):
     # Doubles-specific parameters
     doubles_top_n_for_fsi = Column(Integer, default=8)
     doubles_alpha = Column(Float, default=2.0)
+    doubles_weight_high = Column(Float, default=0.65)
     
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)

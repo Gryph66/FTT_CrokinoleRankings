@@ -111,15 +111,17 @@ def render():
     with col2:
         st.markdown("**Doubles FSI**")
         doubles_fsi_params = {
-            "Parameter": ["Top N Teams", "Scaling Factor", "Min FSI", "Max FSI"],
+            "Parameter": ["Top N Teams", "Team Weight (High)", "Scaling Factor", "Min FSI", "Max FSI"],
             "Value": [
                 f"{points_engine.doubles_top_n_for_fsi}",
+                f"{getattr(points_engine, 'doubles_weight_high', 0.65):.2f}",
                 f"{points_engine.fsi_scaling_factor:.1f}",
                 f"{points_engine.fsi_min:.1f}",
                 f"{points_engine.fsi_max:.1f}"
             ],
             "Description": [
                 "Number of top teams used to calculate FSI",
+                "Weight of higher-rated player in team strength (0.5=equal, 0.65=weighted)",
                 "Divisor to normalize average rating to FSI range (shared)",
                 "Minimum FSI value (floor, shared)",
                 "Maximum FSI value (ceiling, shared)"

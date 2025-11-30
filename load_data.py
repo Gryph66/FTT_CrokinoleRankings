@@ -239,6 +239,7 @@ def load_json_data():
                     normal_tier_base_points=p.get('normal_tier_base_points', 50.0),
                     low_tier_base_points=p.get('low_tier_base_points', 40.0),
                     low_tier_fsi_threshold=p.get('low_tier_fsi_threshold', 1.0),
+                    doubles_weight_high=p.get('doubles_weight_high', 0.65),
                     is_active=1
                 )
                 session.add(params)
