@@ -92,6 +92,7 @@ def render():
     st.dataframe(
         styled_df, 
         width="stretch", 
+        height=750,
         hide_index=True,
         column_config={
             "Total Points": st.column_config.NumberColumn("Total Points", format="%.2f"),

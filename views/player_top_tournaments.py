@@ -106,6 +106,7 @@ def render():
     st.dataframe(
         styled_df, 
         width="stretch", 
+        height=750,
         hide_index=True,
         column_config={
             "FSI": st.column_config.NumberColumn("FSI", format="%.2f"),
