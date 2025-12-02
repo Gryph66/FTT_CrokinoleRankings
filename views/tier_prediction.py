@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from typing import List, Tuple, Dict
+import difflib
+from typing import List, Tuple, Dict, Set
 
 def render():
     """Render the FSI Calculator and Pool Optimizer view."""
@@ -12,6 +13,10 @@ def render():
     # Get database and points engine from session state
     db = st.session_state.db
     points_engine = st.session_state.points_engine
+    
+    # Initialize resolutions state if not present
+    if 'tier_resolutions' not in st.session_state:
+        st.session_state.tier_resolutions = {}
     
     # Tournament format selection
     tournament_format = st.radio(
@@ -37,19 +42,27 @@ def render():
     # Input section
     st.subheader("1. Enter Tournament Field")
     
-    if is_doubles:
-        st.info("For doubles, enter each team on a separate line using format: **Player 1 / Player 2**")
-        placeholder = "Jon Beierling / Justin Slater\nAndrew Hutchinson / Devon Farthing\nJason Beierling / Tom Curry"
-    else:
-        st.info("Enter each player name on a separate line")
-        placeholder = "Jon Beierling\nJustin Slater\nAndrew Hutchinson\nDevon Farthing"
+    col_input, col_res = st.columns([2, 1])
     
-    player_input = st.text_area(
-        "Player/Team List",
-        height=200,
-        placeholder=placeholder,
-        help="Paste or type player names (one per line)"
-    )
+    with col_input:
+        if is_doubles:
+            st.info("For doubles, enter each team on a separate line using format: **Player 1 / Player 2**")
+            placeholder = "Jon Beierling / Justin Slater\nAndrew Hutchinson / Devon Farthing\nJason Beierling / Tom Curry"
+        else:
+            st.info("Enter each player name on a separate line")
+            placeholder = "Jon Beierling\nJustin Slater\nAndrew Hutchinson\nDevon Farthing"
+        
+        player_input = st.text_area(
+            "Player/Team List",
+            height=300,
+            placeholder=placeholder,
+            help="Paste or type player names (one per line)"
+        )
+        
+        if st.session_state.tier_resolutions:
+            if st.button("Clear Saved Resolutions"):
+                st.session_state.tier_resolutions = {}
+                st.rerun()
     
     if not player_input.strip():
         st.info("Enter player names to calculate FSI and optimize pools.")
@@ -60,18 +73,56 @@ def render():
     
     # Process based on format
     if is_doubles:
-        teams, team_ratings = _process_doubles_input(lines, db)
-        if not teams:
+        teams, team_ratings, missing = _process_doubles_input(lines, db, st.session_state.tier_resolutions, points_engine)
+        if not teams and not missing:
             return
         participants = teams
-        ratings = [rating for rating, sigma in team_ratings]
+        ratings = team_ratings
     else:
-        players, player_ratings = _process_singles_input(lines, db)
-        if not players:
-            return
-        participants = players
-        ratings = player_ratings
+        participants, ratings, missing = _process_singles_input(lines, db, st.session_state.tier_resolutions)
     
+    # Handle Missing Players
+    if missing:
+        with col_res:
+            st.warning(f"⚠️ {len(missing)} Unknown Players")
+            st.caption("Please resolve missing players to proceed.")
+            
+            # Get all player names for fuzzy matching
+            all_players = [p.name for p in db.get_all_players()]
+            
+            for name in missing:
+                st.markdown(f"**{name}**")
+                
+                # Find close matches
+                matches = difflib.get_close_matches(name, all_players, n=5, cutoff=0.4)
+                options = ["Select Action...", "New Player (Rating 0)"] + matches
+                
+                # Unique key for each selectbox
+                key = f"resolve_{name}_{hash(name)}"
+                selection = st.selectbox(
+                    "Resolve as:",
+                    options,
+                    key=key,
+                    label_visibility="collapsed"
+                )
+                
+                if selection != "Select Action...":
+                    if selection == "New Player (Rating 0)":
+                        st.session_state.tier_resolutions[name] = "NEW_PLAYER"
+                    else:
+                        st.session_state.tier_resolutions[name] = selection
+                    st.rerun()
+                st.divider()
+        
+        # Don't show results until resolved
+        st.info("👈 Please resolve all unknown players in the sidebar to calculate FSI.")
+        return
+
+    # If we have participants (and no missing), proceed
+    if not participants:
+        st.error("❌ No valid participants found.")
+        return
+        
     st.success(f"✅ Found {len(participants)} {'teams' if is_doubles else 'players'}")
     
     st.divider()
@@ -138,78 +189,93 @@ def render():
         _display_pools(pools, is_doubles)
 
 
-def _process_singles_input(lines: List[str], db) -> Tuple[List[str], List[float]]:
-    """Process singles player input and return player names and ratings."""
+def _resolve_player(name: str, db, resolutions: Dict[str, str]) -> Tuple[str, float, bool]:
+    """
+    Resolve a player name to (display_name, rating, found).
+    Returns found=False if not in DB and not in resolutions.
+    """
+    # Check resolutions first
+    if name in resolutions:
+        res = resolutions[name]
+        if res == "NEW_PLAYER":
+            return f"{name} (New)", 0.0, True
+        else:
+            # Mapped to existing player
+            player = db.get_player_by_name(res)
+            if player:
+                return player.name, player.current_rating_mu, True
+            # If mapped player not found (rare), treat as missing
+            return name, 0.0, False
+            
+    # Check DB directly
+    player = db.get_player_by_name(name)
+    if player:
+        return player.name, player.current_rating_mu, True
+        
+    return name, 0.0, False
+
+
+def _process_singles_input(lines: List[str], db, resolutions: Dict[str, str]) -> Tuple[List[str], List[float], Set[str]]:
+    """Process singles player input and return player names, ratings, and missing names."""
     players = []
     ratings = []
-    missing = []
+    missing = set()
     
     for line in lines:
-        player_name = line.strip()
-        if not player_name:
+        name = line.strip()
+        if not name:
             continue
             
-        # Look up player in database
-        player = db.get_player_by_name(player_name)
-        if player:
-            players.append(player_name)
-            ratings.append(player.current_rating_mu)
+        display_name, rating, found = _resolve_player(name, db, resolutions)
+        
+        if found:
+            players.append(display_name)
+            ratings.append(rating)
         else:
-            missing.append(player_name)
+            missing.add(name)
     
-    if missing:
-        st.warning(f"⚠️ The following players were not found in the database: {', '.join(missing)}")
-    
-    if not players:
-        st.error("❌ No valid players found. Please check names and try again.")
-        return [], []
-    
-    return players, ratings
+    return players, ratings, missing
 
 
-def _process_doubles_input(lines: List[str], db) -> Tuple[List[str], List[Tuple[float, float]]]:
-    """Process doubles team input and return team names and (avg_mu, avg_sigma) tuples."""
+def _process_doubles_input(lines: List[str], db, resolutions: Dict[str, str], points_engine) -> Tuple[List[str], List[float], Set[str]]:
+    """Process doubles team input and return team names, avg_mu (weighted), and missing player names."""
     teams = []
     team_ratings = []
-    missing = []
+    missing = set()
     
     for line in lines:
         if '/' not in line:
-            st.error(f"❌ Invalid doubles format: '{line}'. Use 'Player 1 / Player 2'")
             continue
         
         parts = [p.strip() for p in line.split('/')]
         if len(parts) != 2:
-            st.error(f"❌ Invalid doubles format: '{line}'. Use exactly 2 players separated by '/'")
             continue
         
-        player1_name, player2_name = parts
-        
-        # Look up both players
-        player1 = db.get_player_by_name(player1_name)
-        player2 = db.get_player_by_name(player2_name)
-        
-        if not player1:
-            missing.append(player1_name)
-        if not player2:
-            missing.append(player2_name)
-        
-        if player1 and player2:
-            # Calculate team rating (average of both players)
-            team_mu = (player1.current_rating_mu + player2.current_rating_mu) / 2.0
-            team_sigma = (player1.current_rating_sigma + player2.current_rating_sigma) / 2.0
+        p1_name, p2_name = parts
+        if not p1_name or not p2_name:
+            continue
             
-            teams.append(f"{player1_name} / {player2_name}")
-            team_ratings.append((team_mu, team_sigma))
-    
-    if missing:
-        st.warning(f"⚠️ The following players were not found in the database: {', '.join(set(missing))}")
-    
-    if not teams:
-        st.error("❌ No valid teams found. Please check names and try again.")
-        return [], []
-    
-    return teams, team_ratings
+        # Resolve both players
+        p1_disp, p1_mu, p1_found = _resolve_player(p1_name, db, resolutions)
+        p2_disp, p2_mu, p2_found = _resolve_player(p2_name, db, resolutions)
+        
+        if not p1_found:
+            missing.add(p1_name)
+        if not p2_found:
+            missing.add(p2_name)
+            
+        if p1_found and p2_found:
+            # Weighted average for doubles teams
+            mus = [p1_mu, p2_mu]
+            high_mu = max(mus)
+            low_mu = min(mus)
+            weight = getattr(points_engine, 'doubles_weight_high', 0.65)
+            team_mu = (high_mu * weight) + (low_mu * (1.0 - weight))
+            
+            teams.append(f"{p1_disp} / {p2_disp}")
+            team_ratings.append(team_mu)
+            
+    return teams, team_ratings, missing
 
 
 def _calculate_fsi(
