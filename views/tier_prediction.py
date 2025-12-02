@@ -125,6 +125,24 @@ def render():
         
     st.success(f"✅ Found {len(participants)} {'teams' if is_doubles else 'players'}")
     
+    # --- Corrected List Display ---
+    st.markdown("### ✅ Corrected Player List (Copy & Paste)")
+    st.caption("Copy these names back to your spreadsheet to fix any typos.")
+    
+    clean_list = []
+    for p in participants:
+        # Remove " (New)" suffix if present
+        clean_name = p.replace(" (New)", "")
+        clean_list.append(clean_name)
+        
+    st.text_area(
+        "Corrected List",
+        value="\n".join(clean_list),
+        height=200,
+        label_visibility="collapsed"
+    )
+    # -----------------------------
+    
     st.divider()
     
     # FSI Calculation
