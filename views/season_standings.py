@@ -64,17 +64,26 @@ def render():
     # Format the dataframe for display
     display_df = standings_df.copy()
     display_df['total_points'] = display_df['total_points'].round(2)
+    display_df['singles_points'] = display_df['singles_points'].round(2)
+    display_df['doubles_points'] = display_df['doubles_points'].round(2)
     display_df['final_display_rating'] = display_df['final_display_rating'].round(2)
     
     # Rename columns for display
     display_df = display_df.rename(columns={
         'rank': 'Rank',
         'player': 'Player',
+        'singles_points': 'Singles Points',
+        'doubles_points': 'Doubles Points',
         'total_points': 'Total Points',
         'events_counted': 'Events',
         'final_display_rating': 'TrueSkill Rating',
         'pseudo_elo': 'Pseudo-ELO'
     })
+    
+    # Reorder columns
+    cols = ['Rank', 'Player', 'Singles Points', 'Doubles Points', 'Total Points', 'Events', 'TrueSkill Rating', 'Pseudo-ELO']
+    display_df = display_df[cols]
+    
     
     # Color-code top 3
     def highlight_top3(row):
@@ -95,6 +104,8 @@ def render():
         height=750,
         hide_index=True,
         column_config={
+            "Singles Points": st.column_config.NumberColumn("Singles Points", format="%.2f"),
+            "Doubles Points": st.column_config.NumberColumn("Doubles Points", format="%.2f"),
             "Total Points": st.column_config.NumberColumn("Total Points", format="%.2f"),
             "TrueSkill Rating": st.column_config.NumberColumn("TrueSkill Rating", format="%.2f"),
             "Pseudo-ELO": st.column_config.NumberColumn("Pseudo-ELO", format="%d")
