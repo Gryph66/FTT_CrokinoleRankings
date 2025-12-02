@@ -87,116 +87,84 @@ def render():
     with col1:
         st.markdown("**Singles FSI**")
         singles_fsi_params = {
-            "Parameter": ["Top N Players", "Scaling Factor", "Min FSI", "Max FSI"],
+            "Parameter": ["Top N Players"],
             "Value": [
-                f"{points_engine.top_n_for_fsi}",
-                f"{points_engine.fsi_scaling_factor:.1f}",
-                f"{points_engine.fsi_min:.1f}",
-                f"{points_engine.fsi_max:.1f}"
+                f"{points_engine.top_n_for_fsi}"
             ],
             "Description": [
-                "Number of top players used to calculate FSI",
-                "Divisor to normalize average rating to FSI range",
-                "Minimum FSI value (floor)",
-                "Maximum FSI value (ceiling)"
+                "Number of top players used to calculate FSI"
             ]
         }
         st.dataframe(
             pd.DataFrame(singles_fsi_params),
             width="stretch",
             hide_index=True,
-            height=180
+            height=100
         )
     
     with col2:
         st.markdown("**Doubles FSI**")
         doubles_fsi_params = {
-            "Parameter": ["Top N Teams", "Team Weight (High)", "Scaling Factor", "Min FSI", "Max FSI"],
+            "Parameter": ["Top N Teams", "Team Weight (High)"],
             "Value": [
                 f"{points_engine.doubles_top_n_for_fsi}",
-                f"{getattr(points_engine, 'doubles_weight_high', 0.65):.2f}",
-                f"{points_engine.fsi_scaling_factor:.1f}",
-                f"{points_engine.fsi_min:.1f}",
-                f"{points_engine.fsi_max:.1f}"
+                f"{getattr(points_engine, 'doubles_weight_high', 0.65):.2f}"
             ],
             "Description": [
                 "Number of top teams used to calculate FSI",
-                "Weight of higher-rated player in team strength (0.5=equal, 0.65=weighted)",
-                "Divisor to normalize average rating to FSI range (shared)",
-                "Minimum FSI value (floor, shared)",
-                "Maximum FSI value (ceiling, shared)"
+                "Weight of higher-rated player in team strength (0.5=equal, 0.65=weighted)"
             ]
         }
         st.dataframe(
             pd.DataFrame(doubles_fsi_params),
             width="stretch",
             hide_index=True,
-            height=180
+            height=100
         )
+    
+    st.markdown("**FSI Scaling & Clamps**")
+    fsi_scaling_params = {
+        "Parameter": ["Scaling Factor", "Min FSI", "Max FSI"],
+        "Value": [
+            f"{points_engine.fsi_scaling_factor:.1f}",
+            f"{points_engine.fsi_min:.2f}",
+            f"{points_engine.fsi_max:.2f}"
+        ],
+        "Description": [
+            "Divisor to normalize average rating to FSI range (FSI = avg_top_mu / scaling_factor)",
+            "Minimum FSI value (floor)",
+            "Maximum FSI value (ceiling)"
+        ]
+    }
+    st.dataframe(
+        pd.DataFrame(fsi_scaling_params),
+        width="stretch",
+        hide_index=True,
+        height=140
+    )
     
     st.divider()
     
     # === POINTS PARAMETERS ===
-    st.subheader("🏆 Field-Weighted Points Parameters")
-    st.markdown("*Controls how tournament points are calculated and awarded*")
+    st.subheader("🏆 Points Allocation Parameters")
+    st.markdown("*Controls how tournament points are awarded. Formula: Points = (50 × FSI)^(1 - (Place-1)/(FieldSize-1))*")
     
-    col1, col2 = st.columns(2)
+    points_params_data = {
+        "Parameter": ["Best Tournaments Per Season"],
+        "Value": [
+            f"{getattr(points_engine, 'best_tournaments_per_season', 5)}"
+        ],
+        "Description": [
+            "Number of best events counted per season"
+        ]
+    }
+    st.dataframe(
+        pd.DataFrame(points_params_data),
+        width="stretch",
+        hide_index=True,
+        height=100
+    )
     
-    with col1:
-        st.markdown("**Singles Points**")
-        singles_points_params = {
-            "Parameter": ["Alpha (α)", "Bonus Scale", "Top Tier Base", "Normal Tier Base", "Low Tier Base", "Best Events"],
-            "Value": [
-                f"{points_engine.alpha:.2f}",
-                f"{getattr(points_engine, 'bonus_scale', 0.0):.1f}",
-                f"{getattr(points_engine, 'top_tier_base_points', 50):.0f}",
-                f"{getattr(points_engine, 'normal_tier_base_points', 50):.0f}",
-                f"{getattr(points_engine, 'low_tier_base_points', 50):.0f}",
-                f"{getattr(points_engine, 'best_tournaments_per_season', 5)}"
-            ],
-            "Description": [
-                "Exponential decay rate for placement-based points (higher = more top-heavy)",
-                "Multiplier for overperformance bonus (expected_rank - actual_place)",
-                f"Base points for top tier tournaments (FSI ≥ {getattr(points_engine, 'top_tier_fsi_threshold', 1.35):.2f})",
-                f"Base points for normal tier tournaments",
-                f"Base points for low tier tournaments (FSI ≤ {getattr(points_engine, 'low_tier_fsi_threshold', 1.0):.2f})",
-                "Number of best events counted per season"
-            ]
-        }
-        st.dataframe(
-            pd.DataFrame(singles_points_params),
-            width="stretch",
-            hide_index=True,
-            height=240
-        )
-    
-    with col2:
-        st.markdown("**Doubles Points**")
-        doubles_points_params = {
-            "Parameter": ["Alpha (α)", "Bonus Scale", "Top Tier Base", "Normal Tier Base", "Low Tier Base", "Best Events"],
-            "Value": [
-                f"{points_engine.doubles_alpha:.2f}",
-                f"{getattr(points_engine, 'bonus_scale', 0.0):.1f} (shared)",
-                f"{getattr(points_engine, 'top_tier_base_points', 50):.0f} (shared)",
-                f"{getattr(points_engine, 'normal_tier_base_points', 50):.0f} (shared)",
-                f"{getattr(points_engine, 'low_tier_base_points', 50):.0f} (shared)",
-                f"{getattr(points_engine, 'best_tournaments_per_season', 5)} (shared)"
-            ],
-            "Description": [
-                "Exponential decay rate for placement-based points (higher = more top-heavy)",
-                "Multiplier for overperformance bonus (expected_rank - actual_place)",
-                f"Base points for top tier tournaments (FSI ≥ {getattr(points_engine, 'top_tier_fsi_threshold', 1.35):.2f})",
-                f"Base points for normal tier tournaments",
-                f"Base points for low tier tournaments (FSI ≤ {getattr(points_engine, 'low_tier_fsi_threshold', 1.0):.2f})",
-                "Number of best events counted per season"
-            ]
-        }
-        st.dataframe(
-            pd.DataFrame(doubles_points_params),
-            width="stretch",
-            hide_index=True,
-            height=240
-        )
     
     st.divider()
     
