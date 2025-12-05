@@ -204,13 +204,14 @@ def load_json_data():
                     sigma=p['sigma'],
                     beta=p['beta'],
                     tau=p['tau'],
+                    gamma=p.get('gamma', 0.03),  # TTT skill drift parameter
                     draw_probability=p['draw_probability'],
                     z_score_baseline_mean=p.get('z_score_baseline_mean', 0.0),
                     z_score_baseline_std=p.get('z_score_baseline_std', 1.0)
                 )
                 session.add(params)
                 session.commit()
-                print("Loaded system parameters")
+                print(f"Loaded system parameters (gamma={p.get('gamma', 0.03)})")
         except FileNotFoundError:
             print("⚠️ system_parameters.json not found, skipping")
 

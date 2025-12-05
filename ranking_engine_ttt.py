@@ -8,20 +8,41 @@ from database import get_db_session, Tournament, RatingChange, Player, Tournamen
 from sqlalchemy import func
 
 class TTTRankingEngine:
-    def __init__(self, sigma=1.667, gamma=0.03, beta=1.0):
+    def __init__(self, sigma=1.667, gamma=None, beta=1.0, use_db_params=True):
         """
         Initialize TTT Engine.
         
         Args:
-            sigma: Initial uncertainty (default 6.0 for TTT vs 8.333 for TrueSkill)
-            gamma: Skill drift over time (default 0.03)
-            beta: Performance variance (default 1.0 for TTT vs 4.166 for TrueSkill)
+            sigma: Initial uncertainty (default 1.667 for TTT)
+            gamma: Skill drift over time (default loaded from DB, fallback 0.03)
+            beta: Performance variance (default 1.0 for TTT)
+            use_db_params: If True, load gamma from database
         """
         self.db = DatabaseService()
         self.sigma = sigma
-        self.gamma = gamma
         self.beta = beta
         self.mu = 0.0 # TTT standard mean is 0
+        
+        # Load gamma from database if not specified
+        if gamma is None and use_db_params:
+            self.gamma = self._load_gamma_from_db()
+        else:
+            self.gamma = gamma if gamma is not None else 0.03
+        
+    def _load_gamma_from_db(self) -> float:
+        """Load gamma parameter from database."""
+        try:
+            session = get_db_session()
+            from database import SystemParameters
+            params = session.query(SystemParameters).filter(SystemParameters.is_active == 1).first()
+            if params and hasattr(params, 'gamma') and params.gamma is not None:
+                gamma = float(params.gamma)
+                session.close()
+                return gamma
+            session.close()
+        except Exception as e:
+            print(f"Warning: Could not load gamma from database: {e}")
+        return 0.03  # Default fallback
         
     def get_parameters(self) -> Dict[str, float]:
         """Get current TTT parameters."""

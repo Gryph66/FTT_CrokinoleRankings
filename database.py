@@ -111,6 +111,7 @@ class SystemParameters(Base):
     sigma = Column(Float, default=8.333)
     beta = Column(Float, default=4.166)
     tau = Column(Float, default=0.083)
+    gamma = Column(Float, default=0.03)  # TTT skill drift parameter
     draw_probability = Column(Float, default=0.0)
     is_active = Column(Integer, default=1)
     created_at = Column(DateTime, default=datetime.utcnow)
