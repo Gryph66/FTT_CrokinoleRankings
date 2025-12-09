@@ -78,6 +78,65 @@ def render():
     
     st.divider()
     
+    # === RATING MODEL CONFIGURATION ===
+    st.subheader("🎲 Rating Model Configuration")
+    st.markdown("*Shows which tournament formats are used for ratings and FSI calculations*")
+    
+    # Get current settings from database or engine
+    from database import get_db_session, SystemParameters as SysParams
+    
+    session = get_db_session()
+    try:
+        sys_params = session.query(SysParams).filter_by(is_active=1).first()
+        
+        if sys_params:
+            current_rating_mode = getattr(sys_params, 'rating_mode', 'singles_only') or 'singles_only'
+            current_doubles_weight = getattr(sys_params, 'doubles_contribution_weight', 0.5) or 0.5
+        else:
+            current_rating_mode = 'singles_only'
+            current_doubles_weight = 0.5
+    finally:
+        session.close()
+    
+    rating_mode_labels = {
+        'singles_only': 'Singles Only - Only singles tournament results affect ratings',
+        'singles_doubles': 'Singles + Doubles - Both formats contribute to ratings',
+        'doubles_only': 'Doubles Only - Only doubles tournament results affect ratings'
+    }
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("**Active Rating Model (for FSI/Points)**")
+        st.info(f"📊 **{rating_mode_labels.get(current_rating_mode, current_rating_mode)}**")
+    
+    with col2:
+        st.markdown("**Doubles Contribution Weight**")
+        st.info(f"Higher-rated player: **{current_doubles_weight:.0%}**, Lower-rated: **{(1-current_doubles_weight):.0%}**")
+    
+    # Explanation of models
+    with st.expander("ℹ️ About Rating Models", expanded=False):
+        st.markdown("""
+        **Three Rating Models Are Available:**
+        
+        1. **Singles Only** (Default)
+           - Only singles tournament results affect player ratings
+           - Traditional approach, longest historical baseline
+        
+        2. **Singles + Doubles**
+           - Both formats contribute to the same rating track
+           - Doubles results use partner weighting to determine team skill
+           - More data = potentially more accurate ratings
+        
+        3. **Doubles Only**
+           - Only doubles tournament results affect ratings
+           - Useful for comparing doubles-specific performance
+        
+        The Player Rankings page allows you to VIEW any model, but FSI/Points use the admin-selected model shown above.
+        """)
+    
+    st.divider()
+    
     # === FSI PARAMETERS ===
     st.subheader("📊 Field Strength Index (FSI) Parameters")
     st.markdown("*Controls how tournament field strength is measured*")

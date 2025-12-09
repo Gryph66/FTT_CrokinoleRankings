@@ -60,6 +60,18 @@ class Player(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
+    # Multi-model rating storage (for Singles Only, Singles+Doubles, Doubles Only)
+    current_rating_mu_singles = Column(Float, nullable=True)      # Singles-only model
+    current_rating_sigma_singles = Column(Float, nullable=True)
+    current_rating_mu_combined = Column(Float, nullable=True)     # Singles + Doubles model
+    current_rating_sigma_combined = Column(Float, nullable=True)
+    current_rating_mu_doubles = Column(Float, nullable=True)      # Doubles-only model
+    current_rating_sigma_doubles = Column(Float, nullable=True)
+    
+    # Tournament counts per format
+    singles_tournaments_played = Column(Integer, default=0)
+    doubles_tournaments_played = Column(Integer, default=0)
+    
     results = relationship("TournamentResult", back_populates="player")
     rating_history = relationship("RatingChange", back_populates="player")
 
@@ -120,6 +132,14 @@ class SystemParameters(Base):
     # Z-Score Baseline Parameters (Static Snapshot)
     z_score_baseline_mean = Column(Float, default=0.0)
     z_score_baseline_std = Column(Float, default=1.0)
+    
+    # Rating Model Selection (for FSI/FWP calculations)
+    # Options: 'singles_only', 'singles_doubles', 'doubles_only'
+    rating_mode = Column(String, default='singles_only')
+    
+    # Doubles contribution weight: how much each partner contributes to team skill
+    # 0.5 = equal contribution, 0.6 = stronger player contributes 60%
+    doubles_contribution_weight = Column(Float, default=0.5)
 
 class PointsParameters(Base):
     __tablename__ = 'points_parameters'

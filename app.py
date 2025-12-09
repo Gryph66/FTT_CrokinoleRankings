@@ -42,10 +42,10 @@ def get_latest_db_update():
     return "0"
 
 @st.cache_data
-def get_cached_rankings(_cache_key, db_version, tournament_group=None):
+def get_cached_rankings(_cache_key, db_version, tournament_group=None, rating_model='singles_only'):
     """
     Cache player rankings using direct SQL query.
-    Updated for TTT migration.
+    Updated for TTT migration with multi-model support.
     
     Args:
         _cache_key: Manual cache invalidation key
@@ -53,15 +53,35 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None):
         tournament_group: Optional tournament group filter (e.g., 'NCA', 'UK')
                          If provided, only shows players who participated in that group's singles tournaments
                          Ratings remain unchanged (calculated from all singles tournaments)
+        rating_model: Rating model to display ('singles_only', 'singles_doubles', 'doubles_only')
     """
+    # Determine which columns to use based on rating model
+    model_columns = {
+        'singles_only': ('current_rating_mu_singles', 'current_rating_sigma_singles', 'singles_tournaments_played'),
+        'singles_doubles': ('current_rating_mu_combined', 'current_rating_sigma_combined', 'tournaments_played'),
+        'doubles_only': ('current_rating_mu_doubles', 'current_rating_sigma_doubles', 'doubles_tournaments_played'),
+    }
+    
+    mu_col, sigma_col, tournaments_col = model_columns.get(rating_model, model_columns['singles_only'])
+    
+    # Check if the new columns exist, fallback to legacy if not
+    try:
+        test_sql = f"SELECT {mu_col} FROM players LIMIT 1"
+        pd.read_sql(test_sql, db_engine)
+    except:
+        # Fallback to legacy columns
+        mu_col = 'current_rating_mu'
+        sigma_col = 'current_rating_sigma'
+        tournaments_col = 'tournaments_played'
+    
     # Always get all players first to establish global ranks
-    sql_all = """
+    sql_all = f"""
         SELECT 
             name as player,
-            current_rating_mu as rating,
-            current_rating_sigma as uncertainty,
-            (current_rating_mu - 3 * current_rating_sigma) as conservative_rating,
-            tournaments_played
+            COALESCE({mu_col}, current_rating_mu) as rating,
+            COALESCE({sigma_col}, current_rating_sigma) as uncertainty,
+            (COALESCE({mu_col}, current_rating_mu) - 3 * COALESCE({sigma_col}, current_rating_sigma)) as conservative_rating,
+            COALESCE({tournaments_col}, tournaments_played) as tournaments_played
         FROM players
         ORDER BY conservative_rating DESC
     """
@@ -745,13 +765,55 @@ def show_player_rankings():
     groups_df = get_cached_tournament_groups(st.session_state.data_cache_key)
     tournament_groups = ['All'] + groups_df['tournament_group'].tolist() if len(groups_df) > 0 else ['All']
     
+    # === RATING MODEL SELECTOR ===
+    st.markdown("### Rating Model View")
+    
+    # Get current active model for FSI from database
+    try:
+        active_model_sql = "SELECT rating_mode FROM system_parameters WHERE is_active = 1 LIMIT 1"
+        active_df = pd.read_sql(active_model_sql, db_engine)
+        active_model = active_df.iloc[0]['rating_mode'] if not active_df.empty and active_df.iloc[0]['rating_mode'] else 'singles_only'
+    except:
+        active_model = 'singles_only'
+    
+    model_options = {
+        'singles_only': 'Singles Only',
+        'singles_doubles': 'Singles + Doubles',
+        'doubles_only': 'Doubles Only'
+    }
+    
+    col1, col2 = st.columns([2, 2])
+    with col1:
+        view_model = st.radio(
+            "View Rating Model",
+            options=list(model_options.keys()),
+            format_func=lambda x: model_options[x],
+            horizontal=True,
+            key="ranking_model_view",
+            help="Select which rating model to view. All three models are calculated - this controls which one is displayed."
+        )
+    with col2:
+        active_label = model_options.get(active_model, active_model)
+        if view_model == active_model:
+            st.success(f"✅ **Active for FSI/Points:** {active_label}")
+        else:
+            st.info(f"📊 **Active for FSI/Points:** {active_label}")
+    
+    st.divider()
+    
+    # Model-specific info
+    model_descriptions = {
+        'singles_only': "Ratings calculated from singles tournament results only.",
+        'singles_doubles': "Ratings calculated from both singles and doubles tournament results.",
+        'doubles_only': "Ratings calculated from doubles tournament results only."
+    }
+    st.caption(f"**{model_options[view_model]}:** {model_descriptions[view_model]}")
+    
     st.info("""
     **Note on TTT Ratings:** TrueSkill Through Time uses a different scale than standard TrueSkill. 
     Ratings typically range from -2 to 8, with top players around 6-8. 
     (Standard TrueSkill ranges from 0-50).
     """)
-    
-    st.caption("TrueSkill ratings are calculated from all singles tournaments. The filter below shows only players who participated in the selected group's tournaments.")
     
     # Filters row - Tournament Group and Search on same row
     col1, col2 = st.columns([1, 1])
@@ -764,7 +826,7 @@ def show_player_rankings():
     filter_group = None if selected_group == 'All' else selected_group
     # Get latest DB version for cache invalidation
     latest_db_update = get_latest_db_update()
-    rankings_df = get_cached_rankings(st.session_state.data_cache_key, latest_db_update, tournament_group=filter_group)
+    rankings_df = get_cached_rankings(st.session_state.data_cache_key, latest_db_update, tournament_group=filter_group, rating_model=view_model)
     
     if len(rankings_df) == 0:
         st.info("Please load tournament data in the Data Management section to see rankings.")
