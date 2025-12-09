@@ -171,8 +171,16 @@ def render():
     # === CALCULATION FORMULAS ===
     st.subheader("📐 Calculation Formulas")
     
+    # Build dynamic examples using actual parameters
+    fsi_scale = points_engine.fsi_scaling_factor
+    fsi_min_val = points_engine.fsi_min
+    fsi_max_val = points_engine.fsi_max
+    top_n = points_engine.top_n_for_fsi
+    
     with st.expander("**FSI Calculation**", expanded=False):
-        st.markdown("""
+        st.markdown(f"""
+        **Field Strength Index (FSI)** measures how competitive a tournament field is based on the skill ratings of top players.
+        
         ```
         1. Get top N players/teams by rating (μ)
         2. Calculate average rating: avg_top_μ = sum(top_N_ratings) / N
@@ -180,44 +188,76 @@ def render():
         4. Clamp to range: fsi = max(fsi_min, min(fsi_raw, fsi_max))
         ```
         
-        **Example (Singles with Top 20, Scaling 6.0):**
-        - Top 20 average rating: 30.0
-        - Raw FSI: 30.0 / 6.0 = 5.0
-        - Clamped FSI: max(0.5, min(5.0, 1.5)) = **1.5**
+        **Example (Singles with Top {top_n}, Scaling {fsi_scale:.1f}):**
+        - Top {top_n} average rating: 3.3
+        - Raw FSI: 3.3 / {fsi_scale:.1f} = {3.3/fsi_scale:.2f}
+        - Clamped FSI: max({fsi_min_val}, min({3.3/fsi_scale:.2f}, {fsi_max_val})) = **{max(fsi_min_val, min(3.3/fsi_scale, fsi_max_val)):.2f}**
+        
+        **For Doubles:** Uses top {points_engine.doubles_top_n_for_fsi} teams. Team rating = weighted average of partners 
+        ({getattr(points_engine, 'doubles_weight_high', 0.6):.0%} weight on higher-rated player).
         """)
     
     with st.expander("**Points Calculation**", expanded=False):
         st.markdown("""
-        **New Curve-Based Formula:**
+        **Curve-Based Points Formula** awards more points for better placements at stronger tournaments:
+        
         ```
         Points = (50 × FSI) ^ (1 - (Place - 1) / (FieldSize - 1))
         ```
         
         **Key Properties:**
-        - **Winner (Place 1)**: Always gets `50 × FSI` points.
-        - **Last Place**: Always gets `1` point (floor).
-        - **Curve**: Points decay exponentially based on field size.
+        - **Winner (Place 1)**: Always gets `50 × FSI` points (exponent = 1).
+        - **Last Place**: Always gets `1` point (floor, exponent = 0).
+        - **Curve**: Points decay exponentially based on placement in the field.
         
         **Example (FSI=1.2, Field Size=32):**
-        - **Winner (1st)**: (50 × 1.2)¹ = **60 points**
+        - **Winner (1st)**: (50 × 1.2)^1 = **60 points**
         - **Middle (16th)**: (50 × 1.2)^(1 - 15/31) ≈ 60^0.516 ≈ **8.3 points**
-        - **Last (32nd)**: (50 × 1.2)⁰ = **1 point**
+        - **Last (32nd)**: (50 × 1.2)^0 = **1 point**
+        
+        **Season Standings:** Best 5 tournament results are summed for each player's season total.
         """)
     
-    with st.expander("**Conservative Rating**", expanded=False):
+    with st.expander("**TrueSkill Through Time (TTT) Rating**", expanded=False):
+        st.markdown(f"""
+        **TTT** is a Bayesian skill rating system that tracks player skill over time using probability distributions.
+        
+        Each player has two values:
+        - **μ (mu)**: Estimated skill level (starts at {mu:.1f})
+        - **σ (sigma)**: Uncertainty in the estimate (starts at {sigma:.3f})
+        
+        **How it works:**
+        1. New players start with high uncertainty (we don't know their skill yet)
+        2. After each tournament, ratings update based on results vs. expectations
+        3. Beating higher-rated players → bigger rating gain
+        4. Losing to lower-rated players → bigger rating drop
+        5. Uncertainty (σ) decreases as we see more results
+        
+        **Skill Drift (γ = {gamma:.3f}):**
+        Between tournaments, uncertainty slowly increases to account for the possibility 
+        that skill has changed. Formula: `σ_new = √(σ_old² + γ × days_since_last_event)`
+        """)
+    
+    with st.expander("**Conservative Rating (Display Rating)**", expanded=False):
         st.markdown("""
+        **Conservative Rating** is used for rankings and display. It represents a "worst reasonable case" 
+        estimate of a player's skill.
+        
         ```
         Conservative Rating = μ - 3σ
         ```
         
-        This represents a 99.7% confidence lower bound on a player's true skill.
-        - **μ (mu)**: Estimated skill level
-        - **σ (sigma)**: Uncertainty in the estimate
-        - **3σ**: Three standard deviations (99.7% confidence interval)
+        **Why use this?**
+        - Rewards consistency: players who compete regularly have lower σ (uncertainty)
+        - Prevents new players from ranking too high before proving themselves
+        - Represents a 99.7% confidence lower bound on true skill
         
         **Example:**
-        - μ = 25.0, σ = 2.5
-        - Conservative Rating = 25.0 - (3 × 2.5) = **17.5**
+        - μ = 2.5, σ = 0.8
+        - Conservative Rating = 2.5 - (3 × 0.8) = **0.1**
+        
+        As a player competes more, their σ decreases and their conservative rating rises 
+        (assuming their true skill stays the same or improves).
         """)
     
     st.divider()
