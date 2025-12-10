@@ -547,8 +547,19 @@ def seed_initial_data_if_empty():
             # Create progress tracking UI for initialization
             progress_bar = st.progress(0)
             progress_text = st.empty()
-            progress_text.text("🔄 Loading historical tournament data...")
+            progress_text.text("🔄 Loading data from JSON files...")
             
+            # Load data from JSON files (the primary data source for public site)
+            from load_data import load_json_data
+            load_json_data()
+            
+            progress_bar.progress(100)
+            progress_text.text("✅ Data loaded successfully!")
+            st.session_state.data_cache_key += 1
+            st.rerun()
+            return
+            
+            # Legacy code below - kept for reference but not executed
             df = load_initial_data()
             
             def update_init_progress(current, total, tournament_name):
