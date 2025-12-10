@@ -638,7 +638,12 @@ def main():
     initialize_engine()
     seed_initial_data_if_empty()
     
-    st.title("🎯 NCA Testing - Ratings → FSI → FWPoints")
+    # Title with Crokinole board icon
+    title_col1, title_col2 = st.columns([0.06, 0.94])
+    with title_col1:
+        st.image("crokinole_icon.svg", width=50)
+    with title_col2:
+        st.title("NCA Testing - Ratings → FSI → FWPoints")
     st.markdown("*TrueSkill Through Time player ratings and tournament analysis*")
     
     with st.sidebar:
