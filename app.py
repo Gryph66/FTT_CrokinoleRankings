@@ -638,7 +638,7 @@ def main():
     initialize_engine()
     seed_initial_data_if_empty()
     
-    st.title("🎯 National Crokinole Association Ranking System")
+    st.title("🎯 NCA Testing - Ratings → FSI → FWPoints")
     st.markdown("*TrueSkill Through Time player ratings and tournament analysis*")
     
     with st.sidebar:
