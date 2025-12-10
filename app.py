@@ -972,12 +972,31 @@ def show_player_ratings():
                         hovertemplate='<b>Mean Rating: %{y:.2f}</b><br><i>(Raw skill estimate without uncertainty penalty)</i><extra></extra>'
                     ))
                     
+                    # Trace 4: Forward-Only Conservative Rating (if available)
+                    # Skip first data point as everyone starts with extreme uncertainty
+                    if 'conservative_rating_forward' in history_df.columns and history_df['conservative_rating_forward'].notna().any():
+                        forward_values = history_df['conservative_rating_forward'].copy()
+                        forward_labels = tournament_labels.copy() if isinstance(tournament_labels, list) else list(tournament_labels)
+                        # Set first value to None to skip it on the chart
+                        if len(forward_values) > 1:
+                            forward_values.iloc[0] = None
+                        fig.add_trace(go.Scatter(
+                            x=forward_labels,
+                            y=forward_values,
+                            mode='lines+markers',
+                            name='Forward Only (No Future Info)',
+                            line=dict(color='#2ca02c', width=2, dash='dashdot'),
+                            connectgaps=True,  # Connect the line over the gap
+                            hovertemplate='<b>Forward Only: %{y:.2f}</b><br><i>(Rating using only past tournaments)</i><extra></extra>'
+                        ))
+                    
                     # Calculate Y-axis range to prevent micro-movements from looking huge
-                    all_y_values = pd.concat([
-                        history_df['conservative_rating'], 
-                        history_df['conservative_rating_before'],
-                        history_df['after_mu']
-                    ])
+                    # Exclude first forward value from range calculation (it's extreme)
+                    y_values_list = [history_df['conservative_rating'], history_df['conservative_rating_before'], history_df['after_mu']]
+                    if 'conservative_rating_forward' in history_df.columns and len(history_df) > 1:
+                        # Skip first forward value for range calculation
+                        y_values_list.append(history_df['conservative_rating_forward'].iloc[1:])
+                    all_y_values = pd.concat(y_values_list)
                     y_min = all_y_values.min()
                     y_max = all_y_values.max()
                     y_range = y_max - y_min
@@ -1028,11 +1047,18 @@ def show_player_ratings():
                     
                     st.caption("""
                     **Understanding the Chart:**
-                    - **🔵 Revised Conservative (Solid Blue)**: The player's conservative rating (μ - 3σ) as calculated *today*, using all historical data.
-                    - **🔴 Live Conservative (Dashed Red)**: The player's conservative rating *entering* that tournament, based only on past results.
-                    - **The Gap**: The difference shows how TTT retroactively corrected the rating.
-                        - **Blue > Red**: The player was *underrated* at the time (performed better than expected).
-                        - **Red > Blue**: The player was *overrated* at the time (performed worse than expected).
+                    
+                    **The Lines:**
+                    - **🔵 Revised Conservative (Solid Blue)**: The player's conservative rating (μ - 3σ) as calculated *today*, using all historical data with full backward-forward smoothing.
+                    - **🔴 Live Conservative (Dashed Red)**: The smoothed rating *entering* that tournament. Still uses future info in calculation.
+                    - **🟢 Forward Only (Dash-Dot Green)**: What the rating would have been at that exact moment with NO future information — the true "real-time" estimate.
+                    - **🟠 Mean Rating μ (Dotted Orange)**: Raw skill estimate without the uncertainty penalty (μ only, no -3σ).
+                    
+                    **Key Insights:**
+                    - **Blue vs Green Gap**: Shows how much backward-smoothing revised the rating using future results.
+                    - **Blue > Green**: Future results *improved* this rating (player performed better later than expected).
+                    - **Green > Blue**: Future results *lowered* this rating (player performed worse later).
+                    - **Green line** is most useful for understanding what a "live ranking" would have shown at any point in time.
                     """)
                 
                 with col2:
@@ -1683,7 +1709,7 @@ def show_data_management():
                     st.session_state.db.clear_all_data()
                     # Reinitialize both db and engine
                     st.session_state.db = DatabaseService()
-                    st.session_state.engine = TrueSkillRankingEngineDB(use_db_params=True)
+                    st.session_state.engine = TTTRankingEngine(use_db_params=True)
                     st.session_state.confirm_clear_data = False
                 st.success("✅ All data cleared! You can now import fresh data.")
                 invalidate_data_cache()
@@ -2496,7 +2522,7 @@ def show_tournament_sequencing():
                         
                         st.session_state.db.clear_all_data()
                         
-                        st.session_state.engine = TrueSkillRankingEngineDB(use_db_params=False)
+                        st.session_state.engine = TTTRankingEngine(use_db_params=True)
                         
                         processed = 0
                         for t_data in tournament_data_list:

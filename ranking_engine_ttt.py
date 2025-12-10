@@ -215,6 +215,7 @@ class TTTRankingEngine:
             history = ttt.History(
                 composition=composition,
                 times=times,
+                mu=self.mu,
                 sigma=self.sigma,
                 gamma=self.gamma,
                 beta=self.beta
@@ -371,7 +372,11 @@ class TTTRankingEngine:
                 'conservative_rating_before': change.conservative_rating_before,
                 'conservative_rating': change.conservative_rating_after,
                 'mu_change': change.mu_change,
-                'sigma_change': change.sigma_change
+                'sigma_change': change.sigma_change,
+                # Forward-only values (no future information)
+                'before_mu_forward': getattr(change, 'before_mu_forward', None),
+                'after_mu_forward': getattr(change, 'after_mu_forward', None),
+                'conservative_rating_forward': getattr(change, 'conservative_rating_forward', None)
             })
         
         return history

@@ -183,6 +183,12 @@ def load_json_data():
                 sigma_change=rc.get('sigma_change'),
                 conservative_rating_before=rc.get('conservative_rating_before'),
                 conservative_rating_after=rc.get('conservative_rating_after'),
+                # Forward-only values
+                before_mu_forward=rc.get('before_mu_forward'),
+                before_sigma_forward=rc.get('before_sigma_forward'),
+                after_mu_forward=rc.get('after_mu_forward'),
+                after_sigma_forward=rc.get('after_sigma_forward'),
+                conservative_rating_forward=rc.get('conservative_rating_forward'),
                 rating_model=rc.get('rating_model', 'singles_only')
             )
             session.add(rating_change)

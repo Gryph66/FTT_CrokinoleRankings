@@ -105,6 +105,7 @@ class RatingChange(Base):
     tournament_id = Column(Integer, ForeignKey('tournaments.id'))
     player_id = Column(Integer, ForeignKey('players.id'))
     place = Column(Integer)
+    # Smoothed values (from TTT backward-forward smoothing)
     before_mu = Column(Float)
     before_sigma = Column(Float)
     after_mu = Column(Float)
@@ -113,6 +114,12 @@ class RatingChange(Base):
     sigma_change = Column(Float)
     conservative_rating_before = Column(Float)
     conservative_rating_after = Column(Float)
+    # Forward-only values (no future information used)
+    before_mu_forward = Column(Float, nullable=True)
+    before_sigma_forward = Column(Float, nullable=True)
+    after_mu_forward = Column(Float, nullable=True)
+    after_sigma_forward = Column(Float, nullable=True)
+    conservative_rating_forward = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Rating model this change belongs to: 'singles_only', 'singles_doubles', 'doubles_only'
