@@ -628,7 +628,7 @@ def main():
     seed_initial_data_if_empty()
     
     st.title("🎯 National Crokinole Association Ranking System")
-    st.markdown("*TrueSkill Through Time player rankings and tournament analysis*")
+    st.markdown("*TrueSkill Through Time player ratings and tournament analysis*")
     
     with st.sidebar:
         st.header("Navigation")
@@ -636,7 +636,7 @@ def main():
         page = st.radio(
             "Go to",
             [
-                "📊 Player Rankings",
+                "📊 Player Ratings",
                 "🏆 Tournament Analysis", 
                 "🎲 Tier Prediction", 
                 "---",
@@ -672,8 +672,8 @@ def main():
         else:
             st.info("ℹ️ Database Ready - Load Data")
     
-    if page == "📊 Player Rankings":
-        show_player_rankings()
+    if page == "📊 Player Ratings":
+        show_player_ratings()
     elif page == "🏆 Tournament Analysis":
         show_tournament_analysis()
     elif page == "🎲 Tier Prediction":
@@ -727,7 +727,7 @@ def show_technical_guide():
         section_content = '\n'.join(lines[1:])
         
         with st.expander(f"## {section_title}", expanded=(section_title == "System Overview")):
-            if "TrueSkill Player Rankings" in section_title:
+            if "TrueSkill Player Ratings" in section_title or "TrueSkill Player Rankings" in section_title:
                 st.image("attached_assets/generated_images/TrueSkill_rating_components_diagram_b71680be.png", 
                         caption="TrueSkill Rating Components")
                 section_content = section_content.replace(
@@ -753,12 +753,12 @@ def show_technical_guide():
             
             st.markdown(section_content)
 
-def show_player_rankings():
-    st.header("Player Rankings")
+def show_player_ratings():
+    st.header("Player Ratings")
     
     stats = get_cached_system_stats(st.session_state.data_cache_key)
     if not stats['has_data']:
-        st.info("Please load tournament data in the Data Management section to see rankings.")
+        st.info("Please load tournament data in the Data Management section to see ratings.")
         return
     
     # Tournament group filter
@@ -789,7 +789,7 @@ def show_player_rankings():
             options=list(model_options.keys()),
             format_func=lambda x: model_options[x],
             horizontal=True,
-            key="ranking_model_view",
+            key="rating_model_view",
             help="Select which rating model to view. All three models are calculated - this controls which one is displayed."
         )
     with col2:
@@ -818,7 +818,7 @@ def show_player_rankings():
     # Filters row - Tournament Group and Search on same row
     col1, col2 = st.columns([1, 1])
     with col1:
-        selected_group = st.selectbox("Tournament Group Filter", tournament_groups, index=0, key="player_rankings_group")
+        selected_group = st.selectbox("Tournament Group Filter", tournament_groups, index=0, key="player_ratings_group")
     with col2:
         search_player = st.text_input("🔍 Search Player", "")
     
@@ -829,7 +829,7 @@ def show_player_rankings():
     rankings_df = get_cached_rankings(st.session_state.data_cache_key, latest_db_update, tournament_group=filter_group, rating_model=view_model)
     
     if len(rankings_df) == 0:
-        st.info("Please load tournament data in the Data Management section to see rankings.")
+        st.info("Please load tournament data in the Data Management section to see ratings.")
         return
     
     st.divider()
@@ -865,7 +865,7 @@ def show_player_rankings():
         # Show all players (table will be scrollable)
         filtered_df = rankings_df
     
-    st.subheader(f"Rankings ({len(filtered_df)} players shown)")
+    st.subheader(f"Player Ratings ({len(filtered_df)} players shown)")
     
     display_df = filtered_df.copy()
     display_df['rating'] = display_df['rating'].round(2)
@@ -896,7 +896,16 @@ def show_player_rankings():
         selected_player = st.selectbox("Select Player for Detailed View", rankings_df['player'].tolist())
         
         if selected_player:
-            player_history = st.session_state.engine.get_player_history(selected_player)
+            # Pass the selected rating model to get appropriate history
+            player_history = st.session_state.engine.get_player_history(selected_player, rating_model=view_model)
+            
+            # Show a note if no history available for this model
+            if not player_history and view_model != 'singles_only':
+                st.info(f"No rating history found for '{model_options[view_model]}' model. This player may not have participated in {view_model.replace('_', ' ')} tournaments.")
+                # Fall back to singles history
+                player_history = st.session_state.engine.get_player_history(selected_player, rating_model='singles_only')
+                if player_history:
+                    st.caption("Showing Singles Only history as fallback.")
             
             if player_history:
                 col1, col2 = st.columns(2)
@@ -1082,9 +1091,9 @@ def show_player_rankings():
     st.subheader("Export Data")
     csv = rankings_df.to_csv(index=False)
     st.download_button(
-        label="📥 Download Rankings CSV",
+        label="📥 Download Ratings CSV",
         data=csv,
-        file_name="nca_player_rankings.csv",
+        file_name="nca_player_ratings.csv",
         mime="text/csv"
     )
 

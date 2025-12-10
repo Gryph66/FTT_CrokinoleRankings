@@ -112,6 +112,9 @@ class RatingChange(Base):
     conservative_rating_after = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Rating model this change belongs to: 'singles_only', 'singles_doubles', 'doubles_only'
+    rating_model = Column(String, default='singles_only', index=True)
+    
     tournament = relationship("Tournament", back_populates="rating_changes")
     player = relationship("Player", back_populates="rating_history")
 

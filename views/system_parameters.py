@@ -132,7 +132,7 @@ def render():
            - Only doubles tournament results affect ratings
            - Useful for comparing doubles-specific performance
         
-        The Player Rankings page allows you to VIEW any model, but FSI/Points use the admin-selected model shown above.
+        The Player Ratings page allows you to VIEW any model, but FSI/Points use the admin-selected model shown above.
         """)
     
     st.divider()

@@ -226,15 +226,21 @@ class DatabaseService:
         finally:
             db.close()
     
-    def get_player_rating_history(self, player_id: int) -> List[RatingChange]:
+    def get_player_rating_history(self, player_id: int, rating_model: str = 'singles_only') -> List[RatingChange]:
         db = get_db_session()
         try:
             # Deterministic ordering: tournament_date → sequence_order → created_at → id
-            return db.query(RatingChange).join(
+            query = db.query(RatingChange).join(
                 Tournament, RatingChange.tournament_id == Tournament.id
             ).filter(
                 RatingChange.player_id == player_id
-            ).order_by(
+            )
+            
+            # Filter by rating model if the column exists
+            if hasattr(RatingChange, 'rating_model'):
+                query = query.filter(RatingChange.rating_model == rating_model)
+            
+            return query.order_by(
                 Tournament.tournament_date.asc().nullslast(),
                 Tournament.sequence_order.asc().nullslast(),
                 Tournament.created_at.asc(),

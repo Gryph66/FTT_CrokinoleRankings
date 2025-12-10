@@ -30,7 +30,7 @@ def render():
     
     if len(all_standings_df) == 0:
         st.warning("⚠️ No season standings available. Please run recalculation from Data Management to generate points.")
-        st.info("💡 Upload tournament data and click 'Recalculate All Rankings' to compute season points.")
+        st.info("💡 Upload tournament data and click 'Recalculate All Ratings' to compute season points.")
         return
     
     # Extract and normalize seasons

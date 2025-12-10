@@ -339,12 +339,19 @@ class TTTRankingEngine:
     def get_rankings(self):
         return self.db.get_players_dataframe()
 
-    def get_player_history(self, player_name: str) -> List[Dict]:
+    def get_player_history(self, player_name: str, rating_model: str = 'singles_only') -> List[Dict]:
+        """
+        Get player rating history for a specific rating model.
+        
+        Args:
+            player_name: Player name to look up
+            rating_model: One of 'singles_only', 'singles_doubles', 'doubles_only'
+        """
         player = self.db.get_player_by_name(player_name)
         if not player:
             return []
         
-        changes = self.db.get_player_rating_history(player.id)
+        changes = self.db.get_player_rating_history(player.id, rating_model=rating_model)
         history = []
         
         for change in changes:
