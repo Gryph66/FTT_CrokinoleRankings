@@ -973,12 +973,13 @@ def show_player_ratings():
                     ))
                     
                     # Trace 4: Forward-Only Conservative Rating (if available)
-                    # Skip first data point as everyone starts with extreme uncertainty
+                    # Skip extreme first-tournament values (typically very negative due to high initial uncertainty)
                     if 'conservative_rating_forward' in history_df.columns and history_df['conservative_rating_forward'].notna().any():
-                        # Set first value to NaN so plotly skips it
                         forward_values = history_df['conservative_rating_forward'].copy()
-                        if len(forward_values) > 1:
-                            forward_values.iloc[0] = float('nan')
+                        
+                        # Filter out extreme negative values (first tournament effect)
+                        # Set values below -3 (3 sigma below 0 mean) to NaN
+                        forward_values = forward_values.where(forward_values > -3.0)
                         
                         fig.add_trace(go.Scatter(
                             x=tournament_labels,
@@ -991,11 +992,13 @@ def show_player_ratings():
                         ))
                     
                     # Calculate Y-axis range to prevent micro-movements from looking huge
-                    # Exclude first forward value from range calculation (it's extreme)
+                    # Exclude extreme forward values from range calculation
                     y_values_list = [history_df['conservative_rating'], history_df['conservative_rating_before'], history_df['after_mu']]
-                    if 'conservative_rating_forward' in history_df.columns and len(history_df) > 1:
-                        # Skip first forward value for range calculation
-                        y_values_list.append(history_df['conservative_rating_forward'].iloc[1:])
+                    if 'conservative_rating_forward' in history_df.columns:
+                        # Only include forward values above -3 (filters out extreme first-tournament values)
+                        filtered_forward = history_df['conservative_rating_forward'][history_df['conservative_rating_forward'] > -3.0]
+                        if len(filtered_forward) > 0:
+                            y_values_list.append(filtered_forward)
                     all_y_values = pd.concat(y_values_list)
                     y_min = all_y_values.min()
                     y_max = all_y_values.max()
