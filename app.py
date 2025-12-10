@@ -638,11 +638,11 @@ def main():
     initialize_engine()
     seed_initial_data_if_empty()
     
-    # Title with Crokinole board icon (inline)
-    st.markdown("""
+    # Title with Crokinole board icon (inline using base64)
+    crokinole_icon_b64 = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIiB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCI+CiAgPCEtLSBTb2xpZCB3aGl0ZSBiYWNrZ3JvdW5kIC0tPgogIDxyZWN0IHg9IjAiIHk9IjAiIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiBmaWxsPSJ3aGl0ZSIvPgogIAogIDwhLS0gR3V0dGVyIChyZWQgb3V0ZXIgcmluZyAtIG5vIHF1YWRyYW50IGxpbmVzKSAtLT4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0OCIgZmlsbD0iI0NDMzMzMyIgc3Ryb2tlPSIjMkMxODEwIiBzdHJva2Utd2lkdGg9IjIiLz4KICAKICA8IS0tIDUgem9uZSAodGFuKSAtLT4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0MCIgZmlsbD0iI0Y1RTZEMyIgc3Ryb2tlPSIjMkMxODEwIiBzdHJva2Utd2lkdGg9IjIiLz4KICAKICA8IS0tIDEwIHpvbmUgKHRhbiwgc2FtZSB3aWR0aCBhcyA1IHpvbmUpIC0tPgogIDxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjI4IiBmaWxsPSIjRjVFNkQzIiBzdHJva2U9IiMyQzE4MTAiIHN0cm9rZS13aWR0aD0iMiIvPgogIAogIDwhLS0gMTUgem9uZSAodGFuKSAtLT4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSIxNiIgZmlsbD0iI0Y1RTZEMyIgc3Ryb2tlPSIjMkMxODEwIiBzdHJva2Utd2lkdGg9IjIiLz4KICAKICA8IS0tIDIwIGhvbGUgKGNlbnRlcikgLS0+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNSIgZmlsbD0iIzJDMTgxMCIvPgogIAogIDwhLS0gUXVhZHJhbnQgbGluZXMgKG9ubHkgaW4gNSB6b25lOiBmcm9tIHI9NDAgdG8gcj0yOCkgLS0+CiAgPGxpbmUgeDE9IjUwIiB5MT0iMTAiIHgyPSI1MCIgeTI9IjIyIiBzdHJva2U9IiMyQzE4MTAiIHN0cm9rZS13aWR0aD0iMiIvPgogIDxsaW5lIHgxPSI1MCIgeTE9Ijc4IiB4Mj0iNTAiIHkyPSI5MCIgc3Ryb2tlPSIjMkMxODEwIiBzdHJva2Utd2lkdGg9IjIiLz4KICA8bGluZSB4MT0iMTAiIHkxPSI1MCIgeDI9IjIyIiB5Mj0iNTAiIHN0cm9rZT0iIzJDMTgxMCIgc3Ryb2tlLXdpZHRoPSIyIi8+CiAgPGxpbmUgeDE9Ijc4IiB5MT0iNTAiIHgyPSI5MCIgeTI9IjUwIiBzdHJva2U9IiMyQzE4MTAiIHN0cm9rZS13aWR0aD0iMiIvPgo8L3N2Zz4K"
+    st.markdown(f"""
         <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 0;">
-            <img src="app/static/crokinole_icon.svg" width="50" height="50" style="vertical-align: middle;" 
-                 onerror="this.src='crokinole_icon.svg'"/>
+            <img src="{crokinole_icon_b64}" width="50" height="50" style="vertical-align: middle;"/>
             <h1 style="margin: 0; padding: 0;">NCA Testing - Ratings → FSI → FWPoints</h1>
         </div>
     """, unsafe_allow_html=True)
