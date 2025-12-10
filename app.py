@@ -975,24 +975,18 @@ def show_player_ratings():
                     # Trace 4: Forward-Only Conservative Rating (if available)
                     # Skip first data point as everyone starts with extreme uncertainty
                     if 'conservative_rating_forward' in history_df.columns and history_df['conservative_rating_forward'].notna().any():
-                        # Slice off the first point entirely (extreme initial value)
-                        # Convert to lists to ensure proper alignment
-                        all_forward_values = history_df['conservative_rating_forward'].tolist()
-                        all_forward_labels = list(tournament_labels) if not isinstance(tournament_labels, list) else tournament_labels
-                        
-                        if len(all_forward_values) > 1:
-                            forward_values = all_forward_values[1:]  # Skip first
-                            forward_labels = all_forward_labels[1:]  # Skip first
-                        else:
-                            forward_values = all_forward_values
-                            forward_labels = all_forward_labels
+                        # Set first value to NaN so plotly skips it
+                        forward_values = history_df['conservative_rating_forward'].copy()
+                        if len(forward_values) > 1:
+                            forward_values.iloc[0] = float('nan')
                         
                         fig.add_trace(go.Scatter(
-                            x=forward_labels,
+                            x=tournament_labels,
                             y=forward_values,
                             mode='lines+markers',
                             name='Forward Only (No Future Info)',
                             line=dict(color='#2ca02c', width=2, dash='dashdot'),
+                            connectgaps=True,
                             hovertemplate='<b>Forward Only: %{y:.2f}</b><br><i>(Rating using only past tournaments)</i><extra></extra>'
                         ))
                     
