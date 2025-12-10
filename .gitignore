@@ -22,3 +22,6 @@ Thumbs.db
 
 # Local testing
 .streamlit/secrets.toml
+
+# Database files (recreated from JSON on startup)
+*.db

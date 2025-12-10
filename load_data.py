@@ -10,7 +10,8 @@ from sqlalchemy.orm import sessionmaker
 def load_json_data():
     """Load all JSON files into SQLite database."""
     
-    # Create all tables
+    # Drop all tables and recreate to ensure schema is up to date
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     
     Session = sessionmaker(bind=engine)
@@ -36,7 +37,16 @@ def load_json_data():
                 name=p['name'],
                 current_rating_mu=p.get('current_rating_mu', 0.0),
                 current_rating_sigma=p.get('current_rating_sigma', 1.667),
-                tournaments_played=p.get('tournaments_played', 0)
+                tournaments_played=p.get('tournaments_played', 0),
+                # New multi-model rating columns
+                current_rating_mu_singles=p.get('current_rating_mu_singles'),
+                current_rating_sigma_singles=p.get('current_rating_sigma_singles'),
+                current_rating_mu_combined=p.get('current_rating_mu_combined'),
+                current_rating_sigma_combined=p.get('current_rating_sigma_combined'),
+                current_rating_mu_doubles=p.get('current_rating_mu_doubles'),
+                current_rating_sigma_doubles=p.get('current_rating_sigma_doubles'),
+                singles_tournaments_played=p.get('singles_tournaments_played', 0),
+                doubles_tournaments_played=p.get('doubles_tournaments_played', 0)
             )
             session.add(player)
         session.commit()
@@ -167,7 +177,8 @@ def load_json_data():
                 mu_change=rc.get('mu_change'),
                 sigma_change=rc.get('sigma_change'),
                 conservative_rating_before=rc.get('conservative_rating_before'),
-                conservative_rating_after=rc.get('conservative_rating_after')
+                conservative_rating_after=rc.get('conservative_rating_after'),
+                rating_model=rc.get('rating_model', 'singles_only')
             )
             session.add(rating_change)
         session.commit()
@@ -207,7 +218,9 @@ def load_json_data():
                     gamma=p.get('gamma', 0.03),  # TTT skill drift parameter
                     draw_probability=p['draw_probability'],
                     z_score_baseline_mean=p.get('z_score_baseline_mean', 0.0),
-                    z_score_baseline_std=p.get('z_score_baseline_std', 1.0)
+                    z_score_baseline_std=p.get('z_score_baseline_std', 1.0),
+                    rating_mode=p.get('rating_mode', 'singles_only'),
+                    doubles_contribution_weight=p.get('doubles_contribution_weight', 0.5)
                 )
                 session.add(params)
                 session.commit()
