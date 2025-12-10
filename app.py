@@ -638,12 +638,14 @@ def main():
     initialize_engine()
     seed_initial_data_if_empty()
     
-    # Title with Crokinole board icon
-    title_col1, title_col2 = st.columns([0.06, 0.94])
-    with title_col1:
-        st.image("crokinole_icon.svg", width=50)
-    with title_col2:
-        st.title("NCA Testing - Ratings → FSI → FWPoints")
+    # Title with Crokinole board icon (inline)
+    st.markdown("""
+        <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 0;">
+            <img src="app/static/crokinole_icon.svg" width="50" height="50" style="vertical-align: middle;" 
+                 onerror="this.src='crokinole_icon.svg'"/>
+            <h1 style="margin: 0; padding: 0;">NCA Testing - Ratings → FSI → FWPoints</h1>
+        </div>
+    """, unsafe_allow_html=True)
     st.markdown("*TrueSkill Through Time player ratings and tournament analysis*")
     
     with st.sidebar:
@@ -800,9 +802,13 @@ def show_player_ratings():
     
     col1, col2 = st.columns([2, 2])
     with col1:
+        # Default to the active model from admin parameters
+        model_keys = list(model_options.keys())
+        default_index = model_keys.index(active_model) if active_model in model_keys else 0
         view_model = st.radio(
             "View Rating Model",
-            options=list(model_options.keys()),
+            options=model_keys,
+            index=default_index,
             format_func=lambda x: model_options[x],
             horizontal=True,
             key="rating_model_view",
