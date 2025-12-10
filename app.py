@@ -976,12 +976,16 @@ def show_player_ratings():
                     # Skip first data point as everyone starts with extreme uncertainty
                     if 'conservative_rating_forward' in history_df.columns and history_df['conservative_rating_forward'].notna().any():
                         # Slice off the first point entirely (extreme initial value)
-                        if len(history_df) > 1:
-                            forward_values = history_df['conservative_rating_forward'].iloc[1:]
-                            forward_labels = tournament_labels[1:] if isinstance(tournament_labels, list) else list(tournament_labels)[1:]
+                        # Convert to lists to ensure proper alignment
+                        all_forward_values = history_df['conservative_rating_forward'].tolist()
+                        all_forward_labels = list(tournament_labels) if not isinstance(tournament_labels, list) else tournament_labels
+                        
+                        if len(all_forward_values) > 1:
+                            forward_values = all_forward_values[1:]  # Skip first
+                            forward_labels = all_forward_labels[1:]  # Skip first
                         else:
-                            forward_values = history_df['conservative_rating_forward']
-                            forward_labels = tournament_labels
+                            forward_values = all_forward_values
+                            forward_labels = all_forward_labels
                         
                         fig.add_trace(go.Scatter(
                             x=forward_labels,
