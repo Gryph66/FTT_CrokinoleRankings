@@ -975,18 +975,20 @@ def show_player_ratings():
                     # Trace 4: Forward-Only Conservative Rating (if available)
                     # Skip first data point as everyone starts with extreme uncertainty
                     if 'conservative_rating_forward' in history_df.columns and history_df['conservative_rating_forward'].notna().any():
-                        forward_values = history_df['conservative_rating_forward'].copy()
-                        forward_labels = tournament_labels.copy() if isinstance(tournament_labels, list) else list(tournament_labels)
-                        # Set first value to None to skip it on the chart
-                        if len(forward_values) > 1:
-                            forward_values.iloc[0] = None
+                        # Slice off the first point entirely (extreme initial value)
+                        if len(history_df) > 1:
+                            forward_values = history_df['conservative_rating_forward'].iloc[1:]
+                            forward_labels = tournament_labels[1:] if isinstance(tournament_labels, list) else list(tournament_labels)[1:]
+                        else:
+                            forward_values = history_df['conservative_rating_forward']
+                            forward_labels = tournament_labels
+                        
                         fig.add_trace(go.Scatter(
                             x=forward_labels,
                             y=forward_values,
                             mode='lines+markers',
                             name='Forward Only (No Future Info)',
                             line=dict(color='#2ca02c', width=2, dash='dashdot'),
-                            connectgaps=True,  # Connect the line over the gap
                             hovertemplate='<b>Forward Only: %{y:.2f}</b><br><i>(Rating using only past tournaments)</i><extra></extra>'
                         ))
                     
