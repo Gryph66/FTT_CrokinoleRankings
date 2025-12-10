@@ -8,7 +8,10 @@ import pandas as pd
 import json
 
 # Use SQLite for public site (data will be loaded from JSON)
-DATABASE_URL = 'sqlite:///./public_data.db'
+# Use absolute path based on this file's location for Streamlit Cloud compatibility
+import pathlib
+_DB_DIR = pathlib.Path(__file__).parent.resolve()
+DATABASE_URL = f'sqlite:///{_DB_DIR}/public_data.db'
 
 engine = create_engine(
     DATABASE_URL,

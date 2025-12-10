@@ -4,8 +4,13 @@ Run this after exporting data from admin site.
 """
 import json
 import pandas as pd
+import pathlib
 from database import engine, Base, Tournament, Player, TournamentResult, RatingChange, TournamentFSI, SeasonEventPoints, SeasonLeaderboard, SystemParameters, PointsParameters
 from sqlalchemy.orm import sessionmaker
+
+# Get the directory containing this file for reliable path resolution
+_THIS_DIR = pathlib.Path(__file__).parent.resolve()
+_DATA_DIR = _THIS_DIR / 'data'
 
 def load_json_data():
     """Load all JSON files into SQLite database."""
@@ -29,7 +34,7 @@ def load_json_data():
         session.commit()
         
         print("Loading players...")
-        with open('data/players.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'players.json', 'r', encoding='utf-8') as f:
             players_data = json.load(f)
         for p in players_data:
             player = Player(
@@ -53,7 +58,7 @@ def load_json_data():
         print(f"Loaded {len(players_data)} players")
         
         print("Loading tournaments...")
-        with open('data/tournaments.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'tournaments.json', 'r', encoding='utf-8') as f:
             tournaments_data = json.load(f)
         for t in tournaments_data:
             tournament = Tournament(
@@ -72,7 +77,7 @@ def load_json_data():
         print(f"Loaded {len(tournaments_data)} tournaments")
         
         print("Loading FSI data...")
-        with open('data/fsi_trends.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'fsi_trends.json', 'r', encoding='utf-8') as f:
             fsi_data = json.load(f)
         # Group by tournament ID to avoid duplicates
         fsi_by_tournament = {}
@@ -97,7 +102,7 @@ def load_json_data():
         print(f"Loaded {len(fsi_by_tournament)} FSI records")
         
         print("Loading event points...")
-        with open('data/event_points.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'event_points.json', 'r', encoding='utf-8') as f:
             event_points_data = json.load(f)
         for ep in event_points_data:
             event_point = SeasonEventPoints(
@@ -124,7 +129,7 @@ def load_json_data():
         print(f"Loaded {len(event_points_data)} event points")
         
         print("Loading season standings...")
-        with open('data/season_standings.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'season_standings.json', 'r', encoding='utf-8') as f:
             standings_data = json.load(f)
         
         # Get player name to ID mapping
@@ -153,7 +158,7 @@ def load_json_data():
         print(f"Loaded {len(standings_data)} season standings")
         
         print("Loading rating changes...")
-        with open('data/rating_changes.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'rating_changes.json', 'r', encoding='utf-8') as f:
             rating_changes_data = json.load(f)
         
         # Deduplicate by ID (keep first occurrence)
@@ -185,7 +190,7 @@ def load_json_data():
         print(f"Loaded {len(rating_changes_data)} rating changes")
         
         print("Loading tournament results...")
-        with open('data/tournament_results.json', 'r', encoding='utf-8') as f:
+        with open(_DATA_DIR / 'tournament_results.json', 'r', encoding='utf-8') as f:
             results_data = json.load(f)
         for r in results_data:
             result = TournamentResult(
@@ -203,7 +208,7 @@ def load_json_data():
 
         print("Loading system parameters...")
         try:
-            with open('data/system_parameters.json', 'r', encoding='utf-8') as f:
+            with open(_DATA_DIR / 'system_parameters.json', 'r', encoding='utf-8') as f:
                 sys_params = json.load(f)
             if sys_params:
                 # Clear existing
@@ -230,7 +235,7 @@ def load_json_data():
 
         print("Loading points parameters...")
         try:
-            with open('data/points_parameters.json', 'r', encoding='utf-8') as f:
+            with open(_DATA_DIR / 'points_parameters.json', 'r', encoding='utf-8') as f:
                 points_params = json.load(f)
             if points_params:
                 # Clear existing
