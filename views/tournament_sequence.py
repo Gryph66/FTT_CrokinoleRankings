@@ -71,7 +71,8 @@ def render():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        seasons = ['All'] + sorted(df['season'].dropna().unique().tolist(), reverse=True)
+        # Sort numerically (16 before 9)
+        seasons = ['All'] + sorted(df['season'].dropna().unique().tolist(), key=lambda x: int(x), reverse=True)
         selected_season = st.selectbox("Season", seasons)
     
     with col2:

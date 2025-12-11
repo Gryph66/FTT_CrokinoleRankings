@@ -19,7 +19,7 @@ _HASH_FILE = _THIS_DIR / '.data_hash'
 
 
 # Data version - increment this when JSON data is updated to force reload
-DATA_VERSION = "2024-12-13-v5"  # Update this when you push new data
+DATA_VERSION = "2024-12-13-v6"  # Update this when you push new data
 
 
 def get_data_version_file() -> pathlib.Path:
@@ -385,7 +385,8 @@ def get_cached_players_with_points(_cache_key):
 @st.cache_data
 def get_cached_all_seasons(_cache_key):
     """Cache list of all distinct seasons."""
-    sql = "SELECT DISTINCT season FROM tournaments ORDER BY season DESC"
+    # Cast to integer for proper numeric sorting (16 before 9)
+    sql = "SELECT DISTINCT season FROM tournaments ORDER BY CAST(season AS INTEGER) DESC"
     return pd.read_sql(sql, db_engine)
 
 @st.cache_data
