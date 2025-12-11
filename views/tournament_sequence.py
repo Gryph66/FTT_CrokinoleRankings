@@ -153,3 +153,4 @@ def render():
                         st.write(f"{seq}. [{fmt.upper()}] {row['event_name']}")
     else:
         st.info("No same-day tournament groups found.")
+
