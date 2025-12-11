@@ -25,3 +25,6 @@ Thumbs.db
 
 # Database files (recreated from JSON on startup)
 *.db
+
+# Data hash file (used to detect JSON changes)
+.data_hash

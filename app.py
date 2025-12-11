@@ -7,8 +7,44 @@ from points_engine_db import PointsEngineDB
 from db_service import DatabaseService
 from database import engine as db_engine
 import io
+import hashlib
+import pathlib
 
 st.set_page_config(page_title="NCA Ranking System", layout="wide", initial_sidebar_state="expanded")
+
+# Path to data directory
+_THIS_DIR = pathlib.Path(__file__).parent.resolve()
+_DATA_DIR = _THIS_DIR / 'data'
+_HASH_FILE = _THIS_DIR / '.data_hash'
+
+
+def compute_data_hash() -> str:
+    """Compute a hash of all JSON data files to detect changes."""
+    hasher = hashlib.md5()
+    
+    # Hash key data files that contain rating information
+    data_files = ['rating_changes.json', 'players.json', 'tournaments.json', 'system_parameters.json']
+    
+    for filename in sorted(data_files):
+        filepath = _DATA_DIR / filename
+        if filepath.exists():
+            # Hash file size and modification time for speed (no need to read entire file)
+            stat = filepath.stat()
+            hasher.update(f"{filename}:{stat.st_size}:{stat.st_mtime}".encode())
+    
+    return hasher.hexdigest()
+
+
+def get_stored_hash() -> str:
+    """Get the previously stored data hash."""
+    if _HASH_FILE.exists():
+        return _HASH_FILE.read_text().strip()
+    return ""
+
+
+def store_hash(hash_value: str):
+    """Store the current data hash."""
+    _HASH_FILE.write_text(hash_value)
 
 @st.cache_data
 def load_initial_data():
@@ -531,7 +567,7 @@ def initialize_engine():
         st.session_state.data_cache_key = 0
 
 def seed_initial_data_if_empty():
-    """Automatically load initial tournament data if database is empty (first run)."""
+    """Automatically load initial tournament data if database is empty or data has changed."""
     if 'seeding_attempted' not in st.session_state:
         st.session_state.seeding_attempted = False
     
@@ -540,18 +576,30 @@ def seed_initial_data_if_empty():
     
     tournaments = st.session_state.db.get_all_tournaments()
     
-    if len(tournaments) == 0:
+    # Check if data needs to be reloaded (empty DB or JSON files changed)
+    current_hash = compute_data_hash()
+    stored_hash = get_stored_hash()
+    data_changed = current_hash != stored_hash
+    
+    if len(tournaments) == 0 or data_changed:
         st.session_state.seeding_attempted = True
         
         try:
             # Create progress tracking UI for initialization
             progress_bar = st.progress(0)
             progress_text = st.empty()
-            progress_text.text("🔄 Loading data from JSON files...")
+            
+            if data_changed and len(tournaments) > 0:
+                progress_text.text("🔄 Data update detected - reloading from JSON files...")
+            else:
+                progress_text.text("🔄 Loading data from JSON files...")
             
             # Load data from JSON files (the primary data source for public site)
             from load_data import load_json_data
             load_json_data()
+            
+            # Store the current hash so we don't reload again until next change
+            store_hash(current_hash)
             
             # Re-initialize engines to pick up the newly loaded parameters
             st.session_state.points_engine = PointsEngineDB(use_db_params=True)
@@ -560,6 +608,7 @@ def seed_initial_data_if_empty():
             progress_bar.progress(100)
             progress_text.text("✅ Data loaded successfully!")
             st.session_state.data_cache_key += 1
+            st.cache_data.clear()  # Clear all cached data to ensure fresh reads
             st.rerun()
             return
             
