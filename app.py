@@ -861,7 +861,7 @@ def show_player_ratings():
     st.divider()
     
     # Stats banner
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.metric("Total Players", len(rankings_df))
     with col2:
@@ -881,6 +881,9 @@ def show_player_ratings():
     with col4:
         avg_rating = rankings_df['rating'].mean() if len(rankings_df) > 0 else 0
         st.metric("Average Rating (all players)", f"{avg_rating:.2f}")
+    with col5:
+        gamma_value = st.session_state.engine.gamma if hasattr(st.session_state.engine, 'gamma') else 0.015
+        st.metric("Gamma (γ)", f"{gamma_value:.4f}", help="Skill drift rate - uncertainty grows over time")
     
     st.divider()
     
