@@ -120,6 +120,8 @@ class RatingChange(Base):
     after_mu_forward = Column(Float, nullable=True)
     after_sigma_forward = Column(Float, nullable=True)
     conservative_rating_forward = Column(Float, nullable=True)
+    # Smoothed forward value (EMA of before_mu_forward for stable FSI)
+    before_mu_forward_smoothed = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Rating model this change belongs to: 'singles_only', 'singles_doubles', 'doubles_only'
@@ -153,6 +155,10 @@ class SystemParameters(Base):
     # Doubles contribution weight: how much each partner contributes to team skill
     # 0.5 = equal contribution, 0.6 = stronger player contributes 60%
     doubles_contribution_weight = Column(Float, default=0.5)
+    
+    # FSI Rating Smoothing: Exponential Moving Average factor for forward ratings
+    # 0.0 = no smoothing (raw forward value), higher values = more smoothing
+    fsi_rating_smoothing_factor = Column(Float, default=2.0)
 
 class PointsParameters(Base):
     __tablename__ = 'points_parameters'

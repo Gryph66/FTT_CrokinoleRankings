@@ -1012,15 +1012,34 @@ def show_player_ratings():
                         hovertemplate='<b>Revised Cons.: %{y:.2f}</b><br><i>(Current estimate based on full history)</i><extra></extra>'
                     ))
                     
-                    # Trace 2: Live Conservative Rating (Original)
-                    fig.add_trace(go.Scatter(
-                        x=tournament_labels,
-                        y=history_df['conservative_rating_before'],
-                        mode='lines+markers',
-                        name='Live Conservative (Original)',
-                        line=dict(color='#d62728', width=2, dash='dash'),
-                        hovertemplate='<b>Live Cons.: %{y:.2f}</b><br><i>(Rating entering this tournament)</i><extra></extra>'
-                    ))
+                    # Trace 2: Forward Conservative Rating BEFORE tournament (no future info)
+                    # Shows the forward-only rating entering each tournament
+                    if ('before_mu_forward' in history_df.columns and 'before_sigma_forward' in history_df.columns
+                        and history_df['before_mu_forward'].notna().any() and history_df['before_sigma_forward'].notna().any()):
+                        # Calculate conservative rating from forward values: mu - 3*sigma
+                        before_cons_forward = history_df['before_mu_forward'] - 3 * history_df['before_sigma_forward']
+                        # Filter out extreme negative values (first tournament effect)
+                        before_cons_forward = before_cons_forward.where(before_cons_forward > -3.0)
+                        
+                        fig.add_trace(go.Scatter(
+                            x=tournament_labels,
+                            y=before_cons_forward,
+                            mode='lines+markers',
+                            name='BEFORE Tournament (Forward)',
+                            line=dict(color='#d62728', width=2, dash='dash'),
+                            connectgaps=True,
+                            hovertemplate='<b>Before: %{y:.2f}</b><br><i>(Rating ENTERING - no future info)</i><extra></extra>'
+                        ))
+                    else:
+                        # Fall back to backward-smoothed if forward not available
+                        fig.add_trace(go.Scatter(
+                            x=tournament_labels,
+                            y=history_df['conservative_rating_before'],
+                            mode='lines+markers',
+                            name='BEFORE Tournament (Smoothed)',
+                            line=dict(color='#d62728', width=2, dash='dash'),
+                            hovertemplate='<b>Before: %{y:.2f}</b><br><i>(Rating ENTERING - backward smoothed)</i><extra></extra>'
+                        ))
                     
                     # Trace 3: Mu (Mean Rating)
                     fig.add_trace(go.Scatter(
@@ -1032,7 +1051,7 @@ def show_player_ratings():
                         hovertemplate='<b>Mean Rating: %{y:.2f}</b><br><i>(Raw skill estimate without uncertainty penalty)</i><extra></extra>'
                     ))
                     
-                    # Trace 4: Forward-Only Conservative Rating (if available)
+                    # Trace 4: Forward-Only Conservative Rating (if available) - AFTER tournament
                     # Skip extreme first-tournament values (typically very negative due to high initial uncertainty)
                     if 'conservative_rating_forward' in history_df.columns and history_df['conservative_rating_forward'].notna().any():
                         forward_values = history_df['conservative_rating_forward'].copy()
@@ -1045,20 +1064,26 @@ def show_player_ratings():
                             x=tournament_labels,
                             y=forward_values,
                             mode='lines+markers',
-                            name='Forward Only (No Future Info)',
+                            name='AFTER Tournament (Forward)',
                             line=dict(color='#2ca02c', width=2, dash='dashdot'),
                             connectgaps=True,
-                            hovertemplate='<b>Forward Only: %{y:.2f}</b><br><i>(Rating using only past tournaments)</i><extra></extra>'
+                            hovertemplate='<b>After: %{y:.2f}</b><br><i>(Rating AFTER this tournament - no future info)</i><extra></extra>'
                         ))
                     
                     # Calculate Y-axis range to prevent micro-movements from looking huge
                     # Exclude extreme forward values from range calculation
-                    y_values_list = [history_df['conservative_rating'], history_df['conservative_rating_before'], history_df['after_mu']]
+                    y_values_list = [history_df['conservative_rating'], history_df['after_mu']]
                     if 'conservative_rating_forward' in history_df.columns:
                         # Only include forward values above -3 (filters out extreme first-tournament values)
                         filtered_forward = history_df['conservative_rating_forward'][history_df['conservative_rating_forward'] > -3.0]
                         if len(filtered_forward) > 0:
                             y_values_list.append(filtered_forward)
+                    if ('before_mu_forward' in history_df.columns and 'before_sigma_forward' in history_df.columns
+                        and history_df['before_mu_forward'].notna().any() and history_df['before_sigma_forward'].notna().any()):
+                        before_cons_fwd = history_df['before_mu_forward'] - 3 * history_df['before_sigma_forward']
+                        filtered_before_fwd = before_cons_fwd[(before_cons_fwd > -3.0) & before_cons_fwd.notna()]
+                        if len(filtered_before_fwd) > 0:
+                            y_values_list.append(filtered_before_fwd)
                     all_y_values = pd.concat(y_values_list)
                     y_min = all_y_values.min()
                     y_max = all_y_values.max()
@@ -1112,18 +1137,17 @@ def show_player_ratings():
                     **Understanding the Chart:**
                     
                     **The Lines:**
-                    - **🔵 Revised Conservative (Solid Blue)**: The player's conservative rating (μ - 3σ) as calculated *today*, using all historical data with full backward-forward smoothing.
-                    - **🔴 Live Conservative (Dashed Red)**: The smoothed rating *entering* that tournament. Still uses future info in calculation.
-                    - **🟢 Forward Only (Dash-Dot Green)**: What the rating would have been at that exact moment with NO future information — the true "real-time" estimate.
+                    - **🔵 Revised Conservative (Solid Blue)**: Rating AFTER each tournament, as calculated *today* with full backward-forward smoothing.
+                    - **🔴 BEFORE Tournament (Dashed Red)**: Rating *entering* each tournament — NO future info. What was known at that moment.
+                    - **🟢 AFTER Tournament (Dash-Dot Green)**: Rating *exiting* each tournament — NO future info. True "real-time" progress.
                     - **🟠 Mean Rating μ (Dotted Orange)**: Raw skill estimate without the uncertainty penalty (μ only, no -3σ).
                     
                     **Key Insights:**
-                    - **Blue vs Green Gap**: Shows how much backward-smoothing revised the rating using future results.
-                    - **Blue > Green**: Future results *improved* this rating (player performed better later than expected).
-                    - **Green > Blue**: Future results *lowered* this rating (player performed worse later).
-                    - **Green line** is most useful for understanding what a "live ranking" would have shown at any point in time.
+                    - **Red & Green (Forward)**: Both use only past data — shows actual progression without hindsight.
+                    - **Red below Green**: Normal — you enter lower than you exit after performing well.
+                    - **Blue vs Red/Green Gap**: Shows how much backward smoothing revised ratings using future results.
                     
-                    **Note:** The green line may not show for a player's first 1-2 tournaments. New players start with high uncertainty, resulting in very low forward conservative ratings (often below -3.0) that are filtered to prevent chart scaling issues.
+                    **Note:** Red/Green may not show for first 1-2 tournaments due to high initial uncertainty.
                     """)
                 
                 with col2:

@@ -92,9 +92,11 @@ def render():
         if sys_params:
             current_rating_mode = getattr(sys_params, 'rating_mode', 'singles_only') or 'singles_only'
             current_doubles_weight = getattr(sys_params, 'doubles_contribution_weight', 0.5) or 0.5
+            current_fsi_smoothing = getattr(sys_params, 'fsi_rating_smoothing_factor', 2.0) or 2.0
         else:
             current_rating_mode = 'singles_only'
             current_doubles_weight = 0.5
+            current_fsi_smoothing = 2.0
     finally:
         session.close()
     
@@ -113,6 +115,14 @@ def render():
     with col2:
         st.markdown("**Doubles Contribution Weight**")
         st.info(f"Higher-rated player: **{current_doubles_weight:.0%}**, Lower-rated: **{(1-current_doubles_weight):.0%}**")
+    
+    # FSI Rating Smoothing Parameter
+    st.markdown("**FSI Rating Smoothing (EMA Factor)**")
+    if current_fsi_smoothing > 0:
+        alpha = 1.0 / (1.0 + current_fsi_smoothing)
+        st.info(f"Smoothing Factor: **{current_fsi_smoothing:.1f}** (α = {alpha:.2f} — current value gets {alpha:.0%} weight, historical gets {(1-alpha):.0%})")
+    else:
+        st.info("Smoothing Factor: **0** (No smoothing — using raw forward values)")
     
     # Explanation of models
     with st.expander("ℹ️ About Rating Models", expanded=False):

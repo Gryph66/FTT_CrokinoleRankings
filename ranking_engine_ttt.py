@@ -356,6 +356,15 @@ class TTTRankingEngine:
         
         for change in changes:
             tournament = self.db.get_tournament_details(change.tournament_id)
+            
+            # Calculate conservative rating from smoothed forward (for Red Line)
+            before_mu_fwd_smoothed = getattr(change, 'before_mu_forward_smoothed', None)
+            before_sigma_fwd = getattr(change, 'before_sigma_forward', None)
+            if before_mu_fwd_smoothed is not None and before_sigma_fwd is not None:
+                cons_rating_fwd_smoothed = before_mu_fwd_smoothed - 3 * before_sigma_fwd
+            else:
+                cons_rating_fwd_smoothed = None
+            
             history.append({
                 'tournament_date': tournament.tournament_date if tournament else None,
                 'tournament': tournament.event_name if tournament else 'Unknown',
@@ -374,8 +383,13 @@ class TTTRankingEngine:
                 'sigma_change': change.sigma_change,
                 # Forward-only values (no future information)
                 'before_mu_forward': getattr(change, 'before_mu_forward', None),
+                'before_sigma_forward': before_sigma_fwd,
                 'after_mu_forward': getattr(change, 'after_mu_forward', None),
-                'conservative_rating_forward': getattr(change, 'conservative_rating_forward', None)
+                'after_sigma_forward': getattr(change, 'after_sigma_forward', None),
+                'conservative_rating_forward': getattr(change, 'conservative_rating_forward', None),
+                # Smoothed forward values (for FSI and Red Line)
+                'before_mu_forward_smoothed': before_mu_fwd_smoothed,
+                'conservative_rating_forward_smoothed': cons_rating_fwd_smoothed
             })
         
         return history
