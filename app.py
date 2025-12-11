@@ -19,7 +19,7 @@ _HASH_FILE = _THIS_DIR / '.data_hash'
 
 
 # Data version - increment this when JSON data is updated to force reload
-DATA_VERSION = "2024-12-13-v2"  # Update this when you push new data
+DATA_VERSION = "2024-12-13-v3"  # Update this when you push new data
 
 
 def get_data_version_file() -> pathlib.Path:
