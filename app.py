@@ -1062,6 +1062,8 @@ def show_player_ratings():
                     - **Blue > Green**: Future results *improved* this rating (player performed better later than expected).
                     - **Green > Blue**: Future results *lowered* this rating (player performed worse later).
                     - **Green line** is most useful for understanding what a "live ranking" would have shown at any point in time.
+                    
+                    **Note:** The green line may not show for a player's first 1-2 tournaments. New players start with high uncertainty, resulting in very low forward conservative ratings (often below -3.0) that are filtered to prevent chart scaling issues.
                     """)
                 
                 with col2:
