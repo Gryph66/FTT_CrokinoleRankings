@@ -19,7 +19,7 @@ _HASH_FILE = _THIS_DIR / '.data_hash'
 
 
 # Data version - increment this when JSON data is updated to force reload
-DATA_VERSION = "2024-12-13-v3"  # Update this when you push new data
+DATA_VERSION = "2024-12-13-v4"  # Update this when you push new data
 
 
 def get_data_version_file() -> pathlib.Path:
@@ -353,9 +353,9 @@ def get_cached_tournament_fsi(_cache_key, season=None):
             FROM tournament_fsi tf
             JOIN tournaments t ON tf.tournament_id = t.id
             WHERE t.season = :season
-            ORDER BY t.tournament_date ASC NULLS LAST,
-                     t.sequence_order ASC NULLS LAST,
-                     t.created_at ASC
+            ORDER BY t.sequence_order ASC NULLS LAST,
+                     t.tournament_date ASC NULLS LAST,
+                     t.id ASC
         """
         df = pd.read_sql(sql, db_engine, params={'season': season})
     else:
@@ -364,9 +364,9 @@ def get_cached_tournament_fsi(_cache_key, season=None):
                    tf.fsi, tf.avg_top_mu
             FROM tournament_fsi tf
             JOIN tournaments t ON tf.tournament_id = t.id
-            ORDER BY t.tournament_date ASC NULLS LAST,
-                     t.sequence_order ASC NULLS LAST,
-                     t.created_at ASC
+            ORDER BY t.sequence_order ASC NULLS LAST,
+                     t.tournament_date ASC NULLS LAST,
+                     t.id ASC
         """
         df = pd.read_sql(sql, db_engine)
     return df if len(df) > 0 else pd.DataFrame()
@@ -715,7 +715,8 @@ def main():
                 "🎯 Player Top 5",
                 "📈 FSI Trends",
                 "---",
-                "⚙️ System Parameters"
+                "⚙️ System Parameters",
+                "📅 Tournament Sequence"
             ],
             label_visibility="collapsed")
         
@@ -764,6 +765,9 @@ def main():
     elif page == "⚙️ System Parameters":
         from views import system_parameters
         system_parameters.render()
+    elif page == "📅 Tournament Sequence":
+        from views import tournament_sequence
+        tournament_sequence.render()
     elif page == "---":
         st.info("Please select a page from the sidebar.")
 

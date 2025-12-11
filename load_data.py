@@ -70,7 +70,8 @@ def load_json_data():
                 num_players=t.get('num_players', 0),
                 avg_rating_before=t.get('avg_rating_before'),
                 avg_rating_after=t.get('avg_rating_after'),
-                tournament_date=pd.to_datetime(t.get('tournament_date')) if t.get('tournament_date') else None
+                tournament_date=pd.to_datetime(t.get('tournament_date')) if t.get('tournament_date') else None,
+                sequence_order=t.get('sequence_order')
             )
             session.add(tournament)
         session.commit()

@@ -88,11 +88,10 @@ class TTTRankingEngine:
         try:
             session = self.db.get_session()
             
-            # Step 1: Fetch all tournaments and results
+            # Step 1: Fetch all tournaments (ordered by sequence_order for consistent processing)
             tournaments = session.query(Tournament).order_by(
-                Tournament.tournament_date.asc().nullslast(),
                 Tournament.sequence_order.asc().nullslast(),
-                Tournament.created_at.asc(),
+                Tournament.tournament_date.asc().nullslast(),
                 Tournament.id.asc()
             ).all()
             
@@ -391,8 +390,9 @@ class TTTRankingEngine:
         """
         session = self.db.get_session()
         try:
-            # Step 1: Fetch all tournaments
+            # Step 1: Fetch all tournaments (ordered by sequence_order desc for display)
             tournaments = session.query(Tournament).order_by(
+                Tournament.sequence_order.desc().nullslast(),
                 Tournament.tournament_date.desc()
             ).all()
             

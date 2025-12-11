@@ -241,9 +241,8 @@ class DatabaseService:
                 query = query.filter(RatingChange.rating_model == rating_model)
             
             return query.order_by(
-                Tournament.tournament_date.asc().nullslast(),
                 Tournament.sequence_order.asc().nullslast(),
-                Tournament.created_at.asc(),
+                Tournament.tournament_date.asc().nullslast(),
                 Tournament.id.asc()
             ).all()
         finally:
@@ -278,9 +277,8 @@ class DatabaseService:
             ).options(
                 joinedload(RatingChange.player)
             ).order_by(
-                Tournament.tournament_date.asc().nullslast(),
                 Tournament.sequence_order.asc().nullslast(),
-                Tournament.created_at.asc(),
+                Tournament.tournament_date.asc().nullslast(),
                 Tournament.id.asc(),
                 RatingChange.place.asc()
             ).all()
@@ -543,11 +541,10 @@ class DatabaseService:
         """Get tournaments in chronological order (by tournament_date, falling back to created_at)."""
         db = get_db_session()
         try:
-            # Deterministic ordering: tournament_date → sequence_order → created_at → id
+            # Deterministic ordering: sequence_order is primary (set by ordering algorithm)
             return db.query(Tournament).order_by(
-                Tournament.tournament_date.asc().nullslast(),
                 Tournament.sequence_order.asc().nullslast(),
-                Tournament.created_at.asc(),
+                Tournament.tournament_date.asc().nullslast(),
                 Tournament.id.asc()
             ).all()
         finally:
@@ -558,9 +555,9 @@ class DatabaseService:
         db = get_db_session()
         try:
             tournaments = db.query(Tournament).order_by(
-                Tournament.tournament_date.asc().nullslast(),
                 Tournament.sequence_order.asc().nullslast(),
-                Tournament.created_at.asc()
+                Tournament.tournament_date.asc().nullslast(),
+                Tournament.id.asc()
             ).all()
             
             for i, tournament in enumerate(tournaments, start=1):
