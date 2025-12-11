@@ -553,6 +553,10 @@ def seed_initial_data_if_empty():
             from load_data import load_json_data
             load_json_data()
             
+            # Re-initialize engines to pick up the newly loaded parameters
+            st.session_state.points_engine = PointsEngineDB(use_db_params=True)
+            st.session_state.engine = TTTRankingEngine()
+            
             progress_bar.progress(100)
             progress_text.text("✅ Data loaded successfully!")
             st.session_state.data_cache_key += 1
@@ -2026,7 +2030,7 @@ def show_parameter_tuning():
                 max_value=5.0,
                 value=float(points_params.fsi_scaling_factor),
                 step=0.1,
-                help="Scaling factor for FSI calculation: FSI = avg_top_mu / scaling_factor. Lower = higher FSI values. Default: 2.2"
+                help="Scaling factor for FSI calculation: FSI = avg_top_mu / scaling_factor. Lower = higher FSI values. Default: 3.3"
             )
             
             new_fsi_min = st.number_input(
