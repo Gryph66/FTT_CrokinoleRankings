@@ -18,33 +18,34 @@ _DATA_DIR = _THIS_DIR / 'data'
 _HASH_FILE = _THIS_DIR / '.data_hash'
 
 
-def compute_data_hash() -> str:
-    """Compute a hash of all JSON data files to detect changes."""
-    hasher = hashlib.md5()
+# Data version - increment this when JSON data is updated to force reload
+DATA_VERSION = "2024-12-13-v2"  # Update this when you push new data
+
+
+def get_data_version_file() -> pathlib.Path:
+    """Get path to version file."""
+    return _THIS_DIR / '.data_version'
+
+
+def needs_data_reload() -> bool:
+    """Check if data needs to be reloaded based on version."""
+    version_file = get_data_version_file()
     
-    # Hash key data files that contain rating information
-    data_files = ['rating_changes.json', 'players.json', 'tournaments.json', 'system_parameters.json']
+    # If version file doesn't exist or has different version, reload needed
+    if not version_file.exists():
+        return True
     
-    for filename in sorted(data_files):
-        filepath = _DATA_DIR / filename
-        if filepath.exists():
-            # Hash file size and modification time for speed (no need to read entire file)
-            stat = filepath.stat()
-            hasher.update(f"{filename}:{stat.st_size}:{stat.st_mtime}".encode())
-    
-    return hasher.hexdigest()
+    stored_version = version_file.read_text().strip()
+    return stored_version != DATA_VERSION
 
 
-def get_stored_hash() -> str:
-    """Get the previously stored data hash."""
-    if _HASH_FILE.exists():
-        return _HASH_FILE.read_text().strip()
-    return ""
-
-
-def store_hash(hash_value: str):
-    """Store the current data hash."""
-    _HASH_FILE.write_text(hash_value)
+def mark_data_loaded():
+    """Mark that data has been loaded with current version."""
+    version_file = get_data_version_file()
+    try:
+        version_file.write_text(DATA_VERSION)
+    except Exception:
+        pass  # Ignore write errors on read-only filesystems
 
 @st.cache_data
 def load_initial_data():
@@ -567,7 +568,7 @@ def initialize_engine():
         st.session_state.data_cache_key = 0
 
 def seed_initial_data_if_empty():
-    """Automatically load initial tournament data if database is empty or data has changed."""
+    """Automatically load initial tournament data if database is empty or data version changed."""
     if 'seeding_attempted' not in st.session_state:
         st.session_state.seeding_attempted = False
     
@@ -576,12 +577,10 @@ def seed_initial_data_if_empty():
     
     tournaments = st.session_state.db.get_all_tournaments()
     
-    # Check if data needs to be reloaded (empty DB or JSON files changed)
-    current_hash = compute_data_hash()
-    stored_hash = get_stored_hash()
-    data_changed = current_hash != stored_hash
+    # Check if data needs to be reloaded (empty DB or version changed)
+    reload_needed = needs_data_reload()
     
-    if len(tournaments) == 0 or data_changed:
+    if len(tournaments) == 0 or reload_needed:
         st.session_state.seeding_attempted = True
         
         try:
@@ -589,8 +588,8 @@ def seed_initial_data_if_empty():
             progress_bar = st.progress(0)
             progress_text = st.empty()
             
-            if data_changed and len(tournaments) > 0:
-                progress_text.text("🔄 Data update detected - reloading from JSON files...")
+            if reload_needed and len(tournaments) > 0:
+                progress_text.text(f"🔄 Data version {DATA_VERSION} detected - reloading from JSON files...")
             else:
                 progress_text.text("🔄 Loading data from JSON files...")
             
@@ -598,8 +597,8 @@ def seed_initial_data_if_empty():
             from load_data import load_json_data
             load_json_data()
             
-            # Store the current hash so we don't reload again until next change
-            store_hash(current_hash)
+            # Mark data as loaded with current version
+            mark_data_loaded()
             
             # Re-initialize engines to pick up the newly loaded parameters
             st.session_state.points_engine = PointsEngineDB(use_db_params=True)
