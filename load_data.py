@@ -68,6 +68,7 @@ def load_json_data():
                 tier=t.get('tier'),
                 tournament_group=t.get('tournament_group'),
                 tournament_format=t.get('tournament_format', 'singles'),
+                nca_sanctioned=t.get('nca_sanctioned', 0),
                 num_players=t.get('num_players', 0),
                 avg_rating_before=t.get('avg_rating_before'),
                 avg_rating_after=t.get('avg_rating_after'),

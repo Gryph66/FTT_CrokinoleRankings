@@ -42,6 +42,7 @@ class Tournament(Base):
     tier = Column(String)
     tournament_group = Column(String, index=True, nullable=True)
     tournament_format = Column(String, default='singles', index=True)
+    nca_sanctioned = Column(Integer, default=0, index=True)  # 0 = No, 1 = Yes
     num_players = Column(Integer)
     avg_rating_before = Column(Float)
     avg_rating_after = Column(Float)
