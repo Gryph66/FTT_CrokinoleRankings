@@ -79,7 +79,7 @@ def get_latest_db_update():
     return "0"
 
 @st.cache_data
-def get_cached_rankings(_cache_key, db_version, tournament_group=None, rating_model='singles_only'):
+def get_cached_rankings(_cache_key, db_version, tournament_group=None, nca_sanctioned=None, rating_model='singles_only'):
     """
     Cache player rankings using direct SQL query.
     Updated for TTT migration with multi-model support.
@@ -90,6 +90,7 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None, rating_mo
         tournament_group: Optional tournament group filter (e.g., 'NCA', 'UK')
                          If provided, only shows players who participated in that group's singles tournaments
                          Ratings remain unchanged (calculated from all singles tournaments)
+        nca_sanctioned: Optional NCA sanctioned filter (True, False, or None for all)
         rating_model: Rating model to display ('singles_only', 'singles_doubles', 'doubles_only')
     """
     # Determine which columns to use based on rating model
@@ -161,18 +162,31 @@ def get_cached_rankings(_cache_key, db_version, tournament_group=None, rating_mo
     # Add global rank column (before filtering)
     all_rankings_df.insert(0, 'rank', range(1, len(all_rankings_df) + 1))
     
-    # If tournament group filter is specified, filter the results but keep global ranks
-    if tournament_group:
-        # Get list of players who participated in this group's singles tournaments
-        sql_filter = """
+    # If tournament group or nca_sanctioned filter is specified, filter the results but keep global ranks
+    if tournament_group or nca_sanctioned is not None:
+        # Build WHERE conditions
+        where_conditions = ["t.tournament_format = 'singles'"]
+        params = {}
+        
+        if tournament_group:
+            where_conditions.append("t.tournament_group = :group")
+            params['group'] = tournament_group
+        
+        if nca_sanctioned is not None:
+            where_conditions.append("t.nca_sanctioned = :sanctioned")
+            params['sanctioned'] = 1 if nca_sanctioned else 0
+        
+        where_clause = " AND ".join(where_conditions)
+        
+        # Get list of players who participated in filtered tournaments
+        sql_filter = f"""
             SELECT DISTINCT p.name
             FROM players p
             JOIN tournament_results tr ON p.id = tr.player_id
             JOIN tournaments t ON tr.tournament_id = t.id
-            WHERE t.tournament_group = :group
-              AND t.tournament_format = 'singles'
+            WHERE {where_clause}
         """
-        filtered_players = pd.read_sql(sql_filter, db_engine, params={'group': tournament_group})
+        filtered_players = pd.read_sql(sql_filter, db_engine, params=params)
         
         # Filter all_rankings_df to only include these players (preserving global ranks)
         rankings_df = all_rankings_df[all_rankings_df['player'].isin(filtered_players['name'])]
@@ -905,18 +919,37 @@ def show_player_ratings():
     (Standard TrueSkill ranges from 0-50).
     """)
     
-    # Filters row - Tournament Group and Search on same row
-    col1, col2 = st.columns([1, 1])
+    # Filters row - Tournament Group, NCA Sanctioned, and Search
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         selected_group = st.selectbox("Tournament Group Filter", tournament_groups, index=0, key="player_ratings_group")
     with col2:
+        nca_sanctioned_filter = st.selectbox(
+            "NCA Sanctioned",
+            options=['All', 'Sanctioned Only', 'Non-Sanctioned Only'],
+            index=0,
+            key="player_ratings_sanctioned"
+        )
+    with col3:
         search_player = st.text_input("🔍 Search Player", "")
     
-    # Pass tournament group to rankings query (None if "All" is selected)
+    # Pass tournament group and sanctioned status to rankings query (None if "All" is selected)
     filter_group = None if selected_group == 'All' else selected_group
+    filter_sanctioned = None
+    if nca_sanctioned_filter == 'Sanctioned Only':
+        filter_sanctioned = True
+    elif nca_sanctioned_filter == 'Non-Sanctioned Only':
+        filter_sanctioned = False
     # Get latest DB version for cache invalidation
     latest_db_update = get_latest_db_update()
-    rankings_df = get_cached_rankings(st.session_state.data_cache_key, latest_db_update, tournament_group=filter_group, rating_model=view_model)
+        
+    rankings_df = get_cached_rankings(
+        st.session_state.data_cache_key, 
+        latest_db_update, 
+        tournament_group=filter_group, 
+        nca_sanctioned=filter_sanctioned,
+        rating_model=view_model
+    )
     
     if len(rankings_df) == 0:
         st.info("Please load tournament data in the Data Management section to see ratings.")
@@ -1257,10 +1290,17 @@ def show_tournament_analysis():
     groups_df = get_cached_tournament_groups(st.session_state.data_cache_key)
     tournament_groups = ['All'] + groups_df['tournament_group'].tolist() if len(groups_df) > 0 else ['All']
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         selected_group = st.selectbox("Tournament Group Filter", tournament_groups, index=0, key="tournament_analysis_group")
     with col2:
+        nca_sanctioned_filter = st.selectbox(
+            "NCA Sanctioned",
+            options=['All', 'Sanctioned Only', 'Non-Sanctioned Only'],
+            index=0,
+            key="tournament_analysis_sanctioned"
+        )
+    with col3:
         selected_type = st.selectbox("Tournament Type Filter", ['All', 'Singles', 'Doubles'], index=0, key="tournament_analysis_type")
     
     # Get tournament strength data (now includes id, date, group, avg_rating_before, tournament_format)
@@ -1293,6 +1333,11 @@ def show_tournament_analysis():
     # Apply filters
     if selected_group != 'All':
         tournament_df = tournament_df[tournament_df['tournament_group'] == selected_group]
+    
+    if nca_sanctioned_filter == 'Sanctioned Only':
+        tournament_df = tournament_df[tournament_df['nca_sanctioned'] == 1]
+    elif nca_sanctioned_filter == 'Non-Sanctioned Only':
+        tournament_df = tournament_df[(tournament_df['nca_sanctioned'] == 0) | (tournament_df['nca_sanctioned'].isna())]
         
     if selected_type != 'All':
         type_filter = 'singles' if selected_type == 'Singles' else 'doubles'

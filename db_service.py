@@ -506,6 +506,7 @@ class DatabaseService:
                     'tier': t.tier,
                     'tournament_group': t.tournament_group,
                     'tournament_format': t.tournament_format,
+                    'nca_sanctioned': t.nca_sanctioned,
                     'tournament_date': t.tournament_date,
                     'num_players': t.num_players,
                     'avg_rating_before': t.avg_rating_before,
