@@ -741,6 +741,14 @@ def main():
                 st.caption(f"Last Updated: {last_updated}")
             except:
                 pass
+            
+            # Refresh Data button
+            st.divider()
+            if st.button("🔄 Refresh Data", help="Clear cache and reload data from database", use_container_width=True):
+                st.cache_data.clear()
+                invalidate_data_cache()
+                st.success("✅ Cache cleared! Reloading...")
+                st.rerun()
         else:
             st.info("ℹ️ Database Ready - Load Data")
     
