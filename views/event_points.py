@@ -33,12 +33,27 @@ def render():
     groups_df = get_cached_tournament_groups(cache_key)
     tournament_groups = ['All'] + groups_df['tournament_group'].tolist() if len(groups_df) > 0 else ['All']
     
-    # Tournament group filter
-    selected_group = st.selectbox("Tournament Group", tournament_groups, index=0, key="event_points_group")
+    # Filters row
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_group = st.selectbox("Tournament Group", tournament_groups, index=0, key="event_points_group")
+    with col2:
+        nca_sanctioned_filter = st.selectbox(
+            "NCA Sanctioned",
+            options=['All', 'Sanctioned Only', 'Non-Sanctioned Only'],
+            index=0,
+            key="event_points_sanctioned"
+        )
+    
     group_filter = None if selected_group == 'All' else selected_group
+    sanctioned_filter = None
+    if nca_sanctioned_filter == 'Sanctioned Only':
+        sanctioned_filter = True
+    elif nca_sanctioned_filter == 'Non-Sanctioned Only':
+        sanctioned_filter = False
     
     # Get available tournaments with FSI data (cached)
-    tournaments_df = get_cached_tournaments_with_fsi(cache_key, tournament_group=group_filter)
+    tournaments_df = get_cached_tournaments_with_fsi(cache_key, tournament_group=group_filter, nca_sanctioned=sanctioned_filter)
     
     if len(tournaments_df) == 0:
         st.warning("⚠️ No tournament points data available. Please run recalculation from Data Management.")

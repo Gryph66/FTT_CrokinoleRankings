@@ -41,12 +41,27 @@ def render():
     st.subheader("📊 Points Distribution by Place")
     st.caption("Analyze how points are allocated across finishing positions in different tournaments")
     
-    # Tournament group filter (placed before getting data)
-    selected_group_points = st.selectbox("Tournament Group", tournament_groups, index=0, key="fsi_trends_group")
+    # Filters row
+    col1, col2 = st.columns(2)
+    with col1:
+        selected_group_points = st.selectbox("Tournament Group", tournament_groups, index=0, key="fsi_trends_group")
+    with col2:
+        nca_sanctioned_filter = st.selectbox(
+            "NCA Sanctioned",
+            options=['All', 'Sanctioned Only', 'Non-Sanctioned Only'],
+            index=0,
+            key="fsi_trends_sanctioned"
+        )
+    
     group_filter = None if selected_group_points == 'All' else selected_group_points
+    sanctioned_filter = None
+    if nca_sanctioned_filter == 'Sanctioned Only':
+        sanctioned_filter = True
+    elif nca_sanctioned_filter == 'Non-Sanctioned Only':
+        sanctioned_filter = False
     
     # Get points data (cached with filter)
-    points_df = get_cached_points_by_place(cache_key, tournament_group=group_filter)
+    points_df = get_cached_points_by_place(cache_key, tournament_group=group_filter, nca_sanctioned=sanctioned_filter)
     
     if len(points_df) == 0:
         st.warning("⚠️ No points data available. Please run recalculation from Data Management.")

@@ -202,7 +202,7 @@ def get_cached_tournaments(_cache_key):
     return tournaments_df
 
 @st.cache_data
-def get_cached_season_standings(_cache_key, season=None, tournament_group=None):
+def get_cached_season_standings(_cache_key, season=None, tournament_group=None, nca_sanctioned=None):
     """Cache season standings with optional filters using parameterized queries."""
     params = {}
     where_clauses = []
@@ -214,6 +214,10 @@ def get_cached_season_standings(_cache_key, season=None, tournament_group=None):
     if tournament_group:
         where_clauses.append("t.tournament_group = :tournament_group")
         params['tournament_group'] = tournament_group
+    
+    if nca_sanctioned is not None:
+        where_clauses.append("t.nca_sanctioned = :nca_sanctioned")
+        params['nca_sanctioned'] = 1 if nca_sanctioned else 0
     
     where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
     
@@ -447,25 +451,30 @@ def get_cached_tournaments_list(_cache_key, season=None):
     return df if len(df) > 0 else pd.DataFrame()
 
 @st.cache_data
-def get_cached_tournaments_with_fsi(_cache_key, tournament_group=None):
+def get_cached_tournaments_with_fsi(_cache_key, tournament_group=None, nca_sanctioned=None):
     """Cache tournaments with FSI data for event points page."""
+    # Build WHERE conditions
+    where_conditions = []
+    params = {}
+    
     if tournament_group:
-        sql = """
-            SELECT t.id, t.season, t.event_name, t.tournament_date, t.tournament_format, t.tournament_group, tf.fsi
-            FROM tournaments t
-            JOIN tournament_fsi tf ON t.id = tf.tournament_id
-            WHERE t.tournament_group = :tournament_group
-            ORDER BY t.tournament_date DESC NULLS LAST, t.created_at DESC
-        """
-        return pd.read_sql(sql, db_engine, params={'tournament_group': tournament_group})
-    else:
-        sql = """
-            SELECT t.id, t.season, t.event_name, t.tournament_date, t.tournament_format, t.tournament_group, tf.fsi
-            FROM tournaments t
-            JOIN tournament_fsi tf ON t.id = tf.tournament_id
-            ORDER BY t.tournament_date DESC NULLS LAST, t.created_at DESC
-        """
-        return pd.read_sql(sql, db_engine)
+        where_conditions.append("t.tournament_group = :tournament_group")
+        params['tournament_group'] = tournament_group
+    
+    if nca_sanctioned is not None:
+        where_conditions.append("t.nca_sanctioned = :nca_sanctioned")
+        params['nca_sanctioned'] = 1 if nca_sanctioned else 0
+    
+    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+    
+    sql = f"""
+        SELECT t.id, t.season, t.event_name, t.tournament_date, t.tournament_format, t.tournament_group, tf.fsi
+        FROM tournaments t
+        JOIN tournament_fsi tf ON t.id = tf.tournament_id
+        {where_clause}
+        ORDER BY t.tournament_date DESC NULLS LAST, t.created_at DESC
+    """
+    return pd.read_sql(sql, db_engine, params=params)
 
 @st.cache_data
 def get_cached_team_info(_cache_key, tournament_id):
@@ -480,47 +489,41 @@ def get_cached_team_info(_cache_key, tournament_id):
     return pd.read_sql(sql, db_engine, params={'tournament_id': int(tournament_id)})
 
 @st.cache_data
-def get_cached_points_by_place(_cache_key, tournament_group=None):
+def get_cached_points_by_place(_cache_key, tournament_group=None, nca_sanctioned=None):
     """Cache points distribution data for FSI trends visualization."""
+    # Build WHERE conditions
+    where_conditions = []
+    params = {}
+    
     if tournament_group:
-        sql = """
-            SELECT 
-                t.id as tournament_id,
-                t.event_name,
-                t.season,
-                t.tournament_format,
-                t.tournament_group,
-                t.tournament_date,
-                sep.place,
-                sep.total_points,
-                sep.field_size,
-                tf.fsi
-            FROM season_event_points sep
-            JOIN tournaments t ON sep.tournament_id = t.id
-            JOIN tournament_fsi tf ON sep.tournament_id = tf.tournament_id
-            WHERE t.tournament_group = :tournament_group
-            ORDER BY t.tournament_date DESC, t.id, sep.place
-        """
-        return pd.read_sql(sql, db_engine, params={'tournament_group': tournament_group})
-    else:
-        sql = """
-            SELECT 
-                t.id as tournament_id,
-                t.event_name,
-                t.season,
-                t.tournament_format,
-                t.tournament_group,
-                t.tournament_date,
-                sep.place,
-                sep.total_points,
-                sep.field_size,
-                tf.fsi
-            FROM season_event_points sep
-            JOIN tournaments t ON sep.tournament_id = t.id
-            JOIN tournament_fsi tf ON sep.tournament_id = tf.tournament_id
-            ORDER BY t.tournament_date DESC, t.id, sep.place
-        """
-        return pd.read_sql(sql, db_engine)
+        where_conditions.append("t.tournament_group = :tournament_group")
+        params['tournament_group'] = tournament_group
+    
+    if nca_sanctioned is not None:
+        where_conditions.append("t.nca_sanctioned = :nca_sanctioned")
+        params['nca_sanctioned'] = 1 if nca_sanctioned else 0
+    
+    where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
+    
+    sql = f"""
+        SELECT 
+            t.id as tournament_id,
+            t.event_name,
+            t.season,
+            t.tournament_format,
+            t.tournament_group,
+            t.tournament_date,
+            sep.place,
+            sep.total_points,
+            sep.field_size,
+            tf.fsi
+        FROM season_event_points sep
+        JOIN tournaments t ON sep.tournament_id = t.id
+        JOIN tournament_fsi tf ON sep.tournament_id = tf.tournament_id
+        {where_clause}
+        ORDER BY t.tournament_date DESC, t.id, sep.place
+    """
+    return pd.read_sql(sql, db_engine, params=params)
 
 def get_cache_timestamp():
     """Get a human-readable timestamp for when data was last updated."""

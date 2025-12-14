@@ -44,15 +44,33 @@ def render():
     tournament_groups = ['All'] + groups_df['tournament_group'].tolist() if len(groups_df) > 0 else ['All']
     
     # Filters row
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         selected_season = st.selectbox("Select Season", seasons, index=0)
     with col2:
         selected_group = st.selectbox("Tournament Group", tournament_groups, index=0)
+    with col3:
+        nca_sanctioned_filter = st.selectbox(
+            "NCA Sanctioned",
+            options=['All', 'Sanctioned Only', 'Non-Sanctioned Only'],
+            index=0,
+            key="season_standings_sanctioned"
+        )
     
-    # Get cached standings for selected season and group
+    # Get cached standings for selected season, group, and sanctioned status
     group_filter = None if selected_group == 'All' else selected_group
-    standings_df = get_cached_season_standings(cache_key, season=selected_season, tournament_group=group_filter)
+    sanctioned_filter = None
+    if nca_sanctioned_filter == 'Sanctioned Only':
+        sanctioned_filter = True
+    elif nca_sanctioned_filter == 'Non-Sanctioned Only':
+        sanctioned_filter = False
+    
+    standings_df = get_cached_season_standings(
+        cache_key, 
+        season=selected_season, 
+        tournament_group=group_filter,
+        nca_sanctioned=sanctioned_filter
+    )
     
     if len(standings_df) == 0:
         st.warning(f"⚠️ No standings data available for Season {selected_season}")
