@@ -65,6 +65,7 @@ def load_json_data():
                 id=t['id'],
                 season=t['season'],
                 event_name=t['event_name'],
+                tier=t.get('tier'),
                 tournament_group=t.get('tournament_group'),
                 tournament_format=t.get('tournament_format', 'singles'),
                 num_players=t.get('num_players', 0),
