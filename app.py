@@ -1380,9 +1380,15 @@ def show_tournament_analysis():
     # Sort by date desc
     display_tournament_df = display_tournament_df.sort_values('tournament_date', ascending=False)
     
+    # Calculate display tier (only show for NCA tournaments)
+    display_tournament_df['display_tier'] = display_tournament_df.apply(
+        lambda x: x['tier'] if x['tournament_group'] == 'NCA' else 'N/A', 
+        axis=1
+    )
+    
     st.dataframe(
         display_tournament_df[[
-            'tournament', 'season', 'tournament_date', 'tournament_group', 'tournament_format',
+            'tournament', 'season', 'tournament_date', 'tournament_group', 'display_tier', 'tournament_format',
             'num_players', 'avg_rating_before', 'avg_top_mu', 'fsi_raw', 'fsi'
         ]],
         width="stretch",
@@ -1393,6 +1399,7 @@ def show_tournament_analysis():
             "season": st.column_config.TextColumn("Season", width="small"),
             "tournament_date": st.column_config.TextColumn("Date", width="small"),
             "tournament_group": st.column_config.TextColumn("Tour", width="small"),
+            "display_tier": st.column_config.TextColumn("Tier", width="small"),
             "tournament_format": st.column_config.TextColumn("Type", width="small"),
             "num_players": st.column_config.NumberColumn("Field Size", format="%d"),
             "avg_rating_before": st.column_config.NumberColumn("Avg Rating (all)", format="%.2f"),
