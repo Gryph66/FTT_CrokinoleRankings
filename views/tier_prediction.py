@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 import difflib
+import random
+import math
 from typing import List, Tuple, Dict, Set
 
 def render():
@@ -194,16 +196,30 @@ def render():
     # Pool Optimization
     st.subheader("3. Pool Optimization")
     
-    num_pools = st.number_input(
-        "Number of Pools",
-        min_value=2,
-        max_value=min(20, len(participants)),
-        value=min(4, len(participants) // 5 + 1),
-        help="Divide participants into balanced pools for round-robin play"
-    )
+    col_pools, col_method = st.columns(2)
+    
+    with col_pools:
+        num_pools = st.number_input(
+            "Number of Pools",
+            min_value=2,
+            max_value=min(20, len(participants)),
+            value=min(4, len(participants) // 5 + 1),
+            help="Divide participants into balanced pools for round-robin play"
+        )
+    
+    with col_method:
+        optimization_method = st.radio(
+            "Optimization Method",
+            options=["Snake Draft", "Simulated Annealing"],
+            horizontal=True,
+            help="Snake Draft is fast and simple. Simulated Annealing finds more optimal pool balance."
+        )
     
     if st.button("Generate Balanced Pools", type="primary"):
-        pools = _optimize_pools(participants, ratings, num_pools)
+        if optimization_method == "Snake Draft":
+            pools = _optimize_pools_snake(participants, ratings, num_pools)
+        else:
+            pools = _optimize_pools_annealing(participants, ratings, num_pools)
         _display_pools(pools, is_doubles)
 
 
@@ -340,7 +356,7 @@ def _calculate_fsi(
     return fsi, breakdown
 
 
-def _optimize_pools(participants: List[str], ratings: List[float], num_pools: int) -> List[List[Tuple[str, float]]]:
+def _optimize_pools_snake(participants: List[str], ratings: List[float], num_pools: int) -> List[List[Tuple[str, float]]]:
     """Optimize pool assignments using snake draft algorithm."""
     # Create list of (participant, rating) tuples and sort by rating
     player_ratings = list(zip(participants, ratings))
@@ -360,6 +376,109 @@ def _optimize_pools(participants: List[str], ratings: List[float], num_pools: in
         pools[pool_index].append((player, rating))
     
     return pools
+
+
+def _calculate_pool_variance(pools: List[List[Tuple[str, float]]]) -> float:
+    """Calculate variance of pool averages."""
+    if not pools:
+        return 0.0
+    pool_avgs = [sum(r for _, r in pool) / len(pool) if pool else 0 for pool in pools]
+    overall_avg = sum(pool_avgs) / len(pool_avgs) if pool_avgs else 0
+    variance = sum((avg - overall_avg) ** 2 for avg in pool_avgs) / len(pool_avgs)
+    return variance
+
+
+def _count_zero_rated(pool: List[Tuple[str, float]]) -> int:
+    """Count players with 0 rating in a pool."""
+    return sum(1 for _, rating in pool if rating == 0.0)
+
+
+def _optimize_pools_annealing(participants: List[str], ratings: List[float], num_pools: int) -> List[List[Tuple[str, float]]]:
+    """
+    Optimize pool assignments using Simulated Annealing.
+    Starts with snake draft and iteratively improves by swapping players.
+    
+    Constraint: No pool should have more than ceil(num_zero_rated / num_pools) 
+    players with 0 rating, ensuring even distribution of new players.
+    """
+    # Count 0-rated players and calculate max per pool
+    num_zero_rated = sum(1 for r in ratings if r == 0.0)
+    max_zeros_per_pool = math.ceil(num_zero_rated / num_pools) if num_zero_rated > 0 else 0
+    
+    # Start with snake draft as initial solution
+    pools = _optimize_pools_snake(participants, ratings, num_pools)
+    
+    # Simulated annealing parameters
+    initial_temp = 1.0
+    cooling_rate = 0.995
+    min_temp = 0.001
+    iterations_per_temp = 50
+    
+    current_variance = _calculate_pool_variance(pools)
+    best_pools = [pool[:] for pool in pools]  # Deep copy
+    best_variance = current_variance
+    
+    temperature = initial_temp
+    
+    while temperature > min_temp:
+        for _ in range(iterations_per_temp):
+            # Pick two different pools
+            pool1_idx, pool2_idx = random.sample(range(num_pools), 2)
+            
+            if not pools[pool1_idx] or not pools[pool2_idx]:
+                continue
+            
+            # Pick random players from each pool
+            player1_idx = random.randint(0, len(pools[pool1_idx]) - 1)
+            player2_idx = random.randint(0, len(pools[pool2_idx]) - 1)
+            
+            player1 = pools[pool1_idx][player1_idx]
+            player2 = pools[pool2_idx][player2_idx]
+            
+            # Check if swap would violate 0-rated constraint
+            # Only matters if one is 0-rated and the other isn't
+            p1_is_zero = player1[1] == 0.0
+            p2_is_zero = player2[1] == 0.0
+            
+            if p1_is_zero != p2_is_zero:
+                # Check if the pool receiving the 0-rated player would exceed limit
+                if p1_is_zero:
+                    # Player 1 (0-rated) going to pool 2
+                    if _count_zero_rated(pools[pool2_idx]) >= max_zeros_per_pool:
+                        continue  # Skip this swap - would violate constraint
+                else:
+                    # Player 2 (0-rated) going to pool 1
+                    if _count_zero_rated(pools[pool1_idx]) >= max_zeros_per_pool:
+                        continue  # Skip this swap - would violate constraint
+            
+            # Swap players
+            pools[pool1_idx][player1_idx], pools[pool2_idx][player2_idx] = \
+                pools[pool2_idx][player2_idx], pools[pool1_idx][player1_idx]
+            
+            new_variance = _calculate_pool_variance(pools)
+            
+            # Accept or reject the swap
+            delta = new_variance - current_variance
+            
+            if delta < 0 or random.random() < math.exp(-delta / temperature):
+                # Accept the swap
+                current_variance = new_variance
+                
+                if new_variance < best_variance:
+                    best_variance = new_variance
+                    best_pools = [pool[:] for pool in pools]
+            else:
+                # Reject - swap back
+                pools[pool1_idx][player1_idx], pools[pool2_idx][player2_idx] = \
+                    pools[pool2_idx][player2_idx], pools[pool1_idx][player1_idx]
+        
+        temperature *= cooling_rate
+    
+    # Sort each pool by rating (descending) for cleaner display
+    for pool in best_pools:
+        pool.sort(key=lambda x: x[1], reverse=True)
+    
+    return best_pools
 
 
 def _display_pools(pools: List[List[Tuple[str, float]]], is_doubles: bool):
@@ -407,4 +526,4 @@ def _display_pools(pools: List[List[Tuple[str, float]]], is_doubles: bool):
                 'Name': [name for name, _ in pool],
                 'Rating': [f"{rating:.2f}" for _, rating in pool]
             })
-            st.dataframe(pool_df, width="stretch", hide_index=True, height=min(400, len(pool) * 35 + 38))
+            st.dataframe(pool_df, width="stretch", hide_index=True, height=len(pool) * 35 + 38)
