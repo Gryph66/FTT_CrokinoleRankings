@@ -404,7 +404,7 @@ def get_cached_players_with_points(_cache_key):
 def get_cached_all_seasons(_cache_key):
     """Cache list of all distinct seasons."""
     # Cast to integer for proper numeric sorting (16 before 9)
-    sql = "SELECT DISTINCT season FROM tournaments ORDER BY CAST(season AS INTEGER) DESC"
+    sql = "SELECT season FROM (SELECT DISTINCT season FROM tournaments) AS s ORDER BY CAST(season AS INTEGER) DESC"
     return pd.read_sql(sql, db_engine)
 
 @st.cache_data

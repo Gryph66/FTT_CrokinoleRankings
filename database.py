@@ -94,6 +94,9 @@ class TournamentResult(Base):
     # Team metadata for doubles tournaments
     team_key = Column(String, nullable=True, index=True)
     
+    # Result type: 'Final Results' for FSI/FWP, anything else (e.g., 'Pool A', 'Semi') for TTT only
+    result_type = Column(String, default='Final Results', index=True)
+    
     created_at = Column(DateTime, default=datetime.utcnow)
     
     tournament = relationship("Tournament", back_populates="results")
